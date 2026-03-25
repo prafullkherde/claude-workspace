@@ -1,0 +1,44 @@
+#!/bin/sh
+# Maven wrapper script
+set -e
+
+# Determine the base directory
+MAVEN_PROJECTBASEDIR="${MAVEN_BASEDIR:-"$(find_maven_basedir)"}"
+
+find_maven_basedir() {
+  if [ -z "$1" ]; then
+    basedir="$(pwd)"
+  else
+    basedir="$1"
+  fi
+  while [ "$basedir" != "/" ]; do
+    if [ -f "$basedir/pom.xml" ]; then
+      echo "$basedir"
+      return 0
+    fi
+    basedir="$(dirname "$basedir")"
+  done
+  echo "$(pwd)"
+}
+
+MAVEN_WRAPPER_JAR="$(pwd)/.mvn/wrapper/maven-wrapper.jar"
+MAVEN_WRAPPER_PROPERTIES="$(pwd)/.mvn/wrapper/maven-wrapper.properties"
+
+if [ -r "$MAVEN_WRAPPER_PROPERTIES" ]; then
+  DISTRIBUTION_URL=$(grep distributionUrl "$MAVEN_WRAPPER_PROPERTIES" | cut -d'=' -f2)
+fi
+
+MAVEN_HOME="${HOME}/.m2/wrapper/dists/$(basename "$DISTRIBUTION_URL" .zip)"
+
+if [ -d "$MAVEN_HOME" ]; then
+  MAVEN_BIN="$(find "$MAVEN_HOME" -name "mvn" -type f | head -1)"
+else
+  # Download maven if not available
+  if ! command -v mvn >/dev/null 2>&1; then
+    echo "Maven not found, please install Maven"
+    exit 1
+  fi
+  MAVEN_BIN="mvn"
+fi
+
+exec "$MAVEN_BIN" "$@"
