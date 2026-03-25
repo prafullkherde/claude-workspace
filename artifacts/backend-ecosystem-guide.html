@@ -1,0 +1,2128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backend Ecosystem — Spring Boot, Cloud & Django Under the Hood</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f14;--surface:#161921;--surface2:#1e2230;--border:#2a2f42;--border2:#3a4060;
+    --text:#e4e8f0;--muted:#7a849a;--accent:#6c8aff;--accent2:#50c8a0;--accent3:#f7c94b;
+    --accent4:#ff7c7c;--accent5:#c479f0;--code-bg:#0a0c10;
+    --java:#f89820;--spring:#6db33f;--python:#3776ab;--django:#092e20;--django-accent:#44b78b;
+    --cloud:#ff9900;--docker:#2496ed;--k8s:#326ce5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.7;}
+  nav{position:fixed;top:0;left:0;width:240px;height:100vh;background:var(--surface);border-right:1px solid var(--border);padding:20px 14px;overflow-y:auto;z-index:100;}
+  nav .logo{font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:var(--accent);margin-bottom:20px;line-height:1.4;border-bottom:1px solid var(--border);padding-bottom:14px;}
+  nav a{display:block;padding:6px 10px;border-radius:5px;color:var(--muted);text-decoration:none;font-size:12px;transition:all 0.2s;margin-bottom:1px;}
+  nav a:hover,nav a.active{background:var(--surface2);color:var(--text);}
+  nav .nav-section{font-size:9.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--border2);margin:14px 0 5px 10px;}
+  main{margin-left:240px;padding:0 44px 80px;max-width:960px;}
+  section{padding:60px 0 44px;border-bottom:1px solid var(--border);}
+  section:last-child{border-bottom:none;}
+  .section-tag{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;}
+  h1{font-family:'Playfair Display',serif;font-size:32px;line-height:1.2;color:var(--text);margin-bottom:12px;}
+  h2{font-size:22px;font-weight:700;color:var(--text);margin:36px 0 14px;line-height:1.3;}
+  h3{font-size:16px;font-weight:600;color:var(--text);margin:22px 0 8px;}
+  .subtitle{font-size:16px;color:var(--muted);max-width:640px;margin-bottom:28px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0;}
+  .card.accent{border-color:var(--accent);background:rgba(108,138,255,0.05);}
+  .card.green{border-color:var(--accent2);background:rgba(80,200,160,0.05);}
+  .card.amber{border-color:var(--accent3);background:rgba(247,201,75,0.05);}
+  .card.red{border-color:var(--accent4);background:rgba(255,124,124,0.05);}
+  .card.purple{border-color:var(--accent5);background:rgba(196,121,240,0.05);}
+  .card.java{border-color:var(--java);background:rgba(248,152,32,0.05);}
+  .card.spring{border-color:var(--spring);background:rgba(109,179,63,0.05);}
+  .card.docker{border-color:var(--docker);background:rgba(36,150,237,0.05);}
+  .card.k8s{border-color:var(--k8s);background:rgba(50,108,229,0.05);}
+  .card.django{border-color:var(--django-accent);background:rgba(68,183,139,0.05);}
+  .card-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+  .card.accent .card-label{color:var(--accent);}
+  .card.green .card-label{color:var(--accent2);}
+  .card.amber .card-label{color:var(--accent3);}
+  .card.red .card-label{color:var(--accent4);}
+  .card.purple .card-label{color:var(--accent5);}
+  .card.java .card-label{color:var(--java);}
+  .card.spring .card-label{color:var(--spring);}
+  .card.docker .card-label{color:var(--docker);}
+  .card.k8s .card-label{color:var(--k8s);}
+  .card.django .card-label{color:var(--django-accent);}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:16px 0;}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;margin:10px 0;}
+  code{font-family:'JetBrains Mono',monospace;font-size:12.5px;}
+  .inline-code{background:var(--surface2);border:1px solid var(--border);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--accent2);font-family:'JetBrains Mono',monospace;}
+  .kw{color:#c792ea;}.str{color:#c3e88d;}.fn{color:#82aaff;}.cmt{color:#546e7a;font-style:italic;}
+  .num{color:#f78c6c;}.type{color:#ffcb6b;}.tag{color:#ff5572;}.attr{color:#ffcb6b;}.ann{color:#f7c94b;}
+  .pipeline{display:flex;align-items:center;gap:0;margin:20px 0;overflow-x:auto;padding-bottom:8px;flex-wrap:nowrap;}
+  .pipe-step{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;text-align:center;min-width:90px;flex-shrink:0;}
+  .pipe-step .icon{font-size:18px;margin-bottom:3px;}
+  .pipe-step .name{font-size:11.5px;font-weight:600;color:var(--text);}
+  .pipe-step .desc{font-size:10px;color:var(--muted);margin-top:2px;}
+  .pipe-arrow{color:var(--muted);font-size:16px;padding:0 5px;flex-shrink:0;}
+  .evo-tree{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:18px 22px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.85;margin:14px 0;}
+  .evo-tree .root{color:var(--accent3);font-weight:600;}
+  .evo-tree .problem{color:var(--accent4);}
+  .evo-tree .solution{color:var(--accent2);}
+  .evo-tree .note{color:var(--muted);}
+  .hooks-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:16px 0;}
+  .hook-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+  .hook-card .emoji{font-size:24px;margin-bottom:6px;}
+  .hook-card .hook-title{font-size:11px;font-weight:700;color:var(--accent3);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;}
+  .hook-card p{font-size:12px;color:var(--muted);line-height:1.5;}
+  .story-box{background:linear-gradient(135deg,rgba(108,138,255,0.08) 0%,rgba(80,200,160,0.05) 100%);border:1px solid var(--border2);border-radius:12px;padding:22px;margin:18px 0;position:relative;}
+  .story-box::before{content:'"';font-family:'Playfair Display',serif;font-size:70px;color:var(--accent);opacity:0.2;position:absolute;top:-8px;left:14px;line-height:1;}
+  .story-box .story-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:8px;}
+  .recall-box{background:var(--surface2);border-left:4px solid var(--accent3);border-radius:0 8px 8px 0;padding:14px 18px;margin:14px 0;}
+  .recall-box .recall-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent3);margin-bottom:6px;}
+  .reverse-box{background:rgba(255,124,124,0.06);border:1px solid rgba(255,124,124,0.25);border-radius:8px;padding:14px 18px;margin:14px 0;}
+  .reverse-box .rev-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent4);margin-bottom:6px;}
+  .recap-box{background:rgba(80,200,160,0.07);border:1px solid rgba(80,200,160,0.3);border-radius:8px;padding:14px 18px;margin:18px 0;}
+  .recap-box .recap-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent2);margin-bottom:6px;}
+  .alert-box{background:rgba(247,201,75,0.07);border:1px solid rgba(247,201,75,0.3);border-radius:8px;padding:14px 18px;margin:14px 0;}
+  .alert-box .alert-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent3);margin-bottom:6px;}
+  .code-compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;}
+  .code-side-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:5px 10px;border-radius:5px 5px 0 0;display:inline-block;margin-bottom:-1px;}
+  .java-label{background:rgba(248,152,32,0.2);color:#fcd34d;}
+  .spring-label{background:rgba(109,179,63,0.2);color:#86efac;}
+  .python-label{background:rgba(55,118,171,0.2);color:#93c5fd;}
+  .django-label{background:rgba(68,183,139,0.2);color:#6ee7b7;}
+  .before-label{background:rgba(245,158,11,0.2);color:#fcd34d;}
+  .after-label{background:rgba(80,200,160,0.2);color:#6ee7b7;}
+  .comp-table{width:100%;border-collapse:collapse;margin:18px 0;font-size:13px;}
+  .comp-table th{padding:11px 14px;text-align:left;background:var(--surface2);border-bottom:2px solid var(--border2);font-weight:600;}
+  .comp-table th.java-col{color:var(--java);}
+  .comp-table th.spring-col{color:var(--spring);}
+  .comp-table th.python-col{color:var(--python);}
+  .comp-table th.django-col{color:var(--django-accent);}
+  .comp-table td{padding:10px 14px;border-bottom:1px solid var(--border);}
+  .comp-table tr:hover td{background:var(--surface2);}
+  .comp-table td:first-child{color:var(--accent3);font-weight:600;font-size:12px;}
+  .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+  .badge-new{background:rgba(80,200,160,0.2);color:var(--accent2);}
+  .badge-key{background:rgba(247,201,75,0.2);color:var(--accent3);}
+  .badge-java{background:rgba(248,152,32,0.2);color:var(--java);}
+  .badge-spring{background:rgba(109,179,63,0.2);color:var(--spring);}
+  .badge-python{background:rgba(55,118,171,0.2);color:#93c5fd;}
+  .hero{padding:70px 0 44px;border-bottom:1px solid var(--border);}
+  .hero-tag{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);font-weight:600;margin-bottom:14px;}
+  .hero h1{font-size:44px;margin-bottom:16px;}
+  .hero-meta{display:flex;gap:18px;align-items:center;margin-top:24px;flex-wrap:wrap;}
+  .hero-meta .meta-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);}
+  .tag-row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
+  .tag-pill{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:600;border:1px solid;}
+  .pill-java{color:var(--java);border-color:rgba(248,152,32,0.4);background:rgba(248,152,32,0.07);}
+  .pill-spring{color:var(--spring);border-color:rgba(109,179,63,0.4);background:rgba(109,179,63,0.07);}
+  .pill-cloud{color:var(--cloud);border-color:rgba(255,153,0,0.4);background:rgba(255,153,0,0.07);}
+  .pill-docker{color:var(--docker);border-color:rgba(36,150,237,0.4);background:rgba(36,150,237,0.07);}
+  .pill-k8s{color:var(--k8s);border-color:rgba(50,108,229,0.4);background:rgba(50,108,229,0.07);}
+  .pill-python{color:#93c5fd;border-color:rgba(55,118,171,0.4);background:rgba(55,118,171,0.07);}
+  .pill-django{color:var(--django-accent);border-color:rgba(68,183,139,0.4);background:rgba(68,183,139,0.07);}
+  blockquote{border-left:3px solid var(--accent);padding:11px 18px;margin:14px 0;background:rgba(108,138,255,0.05);border-radius:0 8px 8px 0;font-style:italic;color:var(--text);}
+  blockquote cite{display:block;font-size:11.5px;color:var(--muted);margin-top:5px;font-style:normal;}
+  ul,ol{padding-left:20px;margin:10px 0;}
+  li{margin-bottom:5px;color:var(--text);font-size:14px;}
+  p{margin-bottom:12px;color:var(--text);font-size:14px;}
+  strong{color:var(--text);font-weight:600;}
+  .layer-stack{display:flex;flex-direction:column;gap:3px;margin:16px 0;}
+  .layer{padding:12px 18px;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .layer .layer-name{font-weight:600;font-size:13px;}
+  .layer .layer-desc{font-size:12px;color:var(--muted);}
+  .microservice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0;}
+  .ms-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;}
+  .ms-box .ms-icon{font-size:22px;margin-bottom:4px;}
+  .ms-box .ms-name{font-size:12px;font-weight:700;color:var(--text);}
+  .ms-box .ms-tech{font-size:10.5px;color:var(--muted);margin-top:3px;}
+  @media(max-width:900px){nav{display:none;}main{margin-left:0;padding:0 20px 60px;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Backend Ecosystem<br>Spring Boot · Cloud · Django<br><span style="color:var(--muted);font-family:'Space Grotesk',sans-serif;font-size:10px;">Under the Hood v1</span></div>
+
+  <div class="nav-section">☕ Java / JVM</div>
+  <a href="#jvm">JVM — How Java Runs</a>
+  <a href="#build-tools">Maven & Gradle</a>
+
+  <div class="nav-section">🌿 Spring</div>
+  <a href="#spring-core">Spring Core — IoC & DI</a>
+  <a href="#spring-boot">Spring Boot — Auto-Config</a>
+  <a href="#spring-mvc">Spring MVC — HTTP Layer</a>
+  <a href="#spring-data">Spring Data JPA</a>
+  <a href="#spring-security">Spring Security</a>
+  <a href="#spring-actuator">Actuator & DevTools</a>
+
+  <div class="nav-section">☁️ Cloud Ecosystem</div>
+  <a href="#spring-cloud">Spring Cloud — Microservices</a>
+  <a href="#docker">Docker — Containerization</a>
+  <a href="#kubernetes">Kubernetes — Orchestration</a>
+  <a href="#aws">AWS — Cloud Provider</a>
+  <a href="#cicd">CI/CD Pipelines</a>
+
+  <div class="nav-section">🐍 Python / Django</div>
+  <a href="#python-eco">pip, venv & Poetry</a>
+  <a href="#django">Django — MVT Framework</a>
+  <a href="#drf">Django REST Framework</a>
+  <a href="#celery">Celery — Async Tasks</a>
+
+  <div class="nav-section">📊 Comparisons</div>
+  <a href="#js-vs-java">JS vs Java Ecosystem</a>
+  <a href="#spring-vs-django">Spring vs Django</a>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<div class="hero" id="top">
+  <div class="hero-tag">Backend Ecosystem — Under the Hood</div>
+  <h1>Spring Boot, Cloud & Django<br>From Zero to Production</h1>
+  <p class="subtitle">The same mental model you built for Angular/React — now applied to the backend. Every concept mapped, every magic explained.</p>
+  <div class="tag-row">
+    <span class="tag-pill pill-java">Java 21</span>
+    <span class="tag-pill pill-spring">Spring Boot 3</span>
+    <span class="tag-pill pill-spring">Spring Cloud</span>
+    <span class="tag-pill pill-cloud">AWS</span>
+    <span class="tag-pill pill-docker">Docker</span>
+    <span class="tag-pill pill-k8s">Kubernetes</span>
+    <span class="tag-pill pill-python">Python 3.12</span>
+    <span class="tag-pill pill-django">Django 5</span>
+  </div>
+  <div class="hero-meta">
+    <div class="meta-item">☕ <span>Java/Spring Boot</span></div>
+    <div class="meta-item">☁️ <span>Cloud-native patterns</span></div>
+    <div class="meta-item">🐍 <span>Python/Django</span></div>
+    <div class="meta-item">🐳 <span>Docker + K8s</span></div>
+  </div>
+</div>
+
+<div class="card accent" style="margin-top:30px;">
+  <div class="card-label">🗺️ The Big Picture — Your JS Knowledge, Remapped</div>
+  <table class="comp-table" style="margin:0;">
+    <thead>
+      <tr>
+        <th>Concept</th>
+        <th class="java-col">JS Equivalent</th>
+        <th class="spring-col">Java / Spring Boot</th>
+        <th class="django-col">Python / Django</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Runtime</td><td>Node.js (V8 engine)</td><td>JVM (bytecode)</td><td>CPython interpreter</td></tr>
+      <tr><td>Package manager</td><td>npm / yarn</td><td>Maven / Gradle</td><td>pip / Poetry</td></tr>
+      <tr><td>Package registry</td><td>npmjs.org</td><td>Maven Central</td><td>PyPI</td></tr>
+      <tr><td>Lock file</td><td>package-lock.json</td><td>pom.xml (exact) / build.gradle</td><td>poetry.lock / requirements.txt</td></tr>
+      <tr><td>Framework</td><td>Angular / React</td><td>Spring Boot</td><td>Django</td></tr>
+      <tr><td>HTTP routing</td><td>Express router / Angular routes</td><td>Spring MVC @RequestMapping</td><td>urls.py</td></tr>
+      <tr><td>Middleware</td><td>Express middleware</td><td>Spring Filters / Interceptors</td><td>Django Middleware</td></tr>
+      <tr><td>ORM</td><td>TypeORM / Prisma</td><td>Spring Data JPA / Hibernate</td><td>Django ORM</td></tr>
+      <tr><td>DI / IoC</td><td>Angular DI / manual</td><td>Spring IoC Container</td><td>Manual / django-inject</td></tr>
+      <tr><td>Build output</td><td>dist/ (Webpack bundle)</td><td>.jar / .war (fat jar)</td><td>Python source (no compile)</td></tr>
+      <tr><td>Config</td><td>.env / angular.json</td><td>application.properties / .yml</td><td>settings.py</td></tr>
+      <tr><td>Testing</td><td>Jest / Karma</td><td>JUnit 5 / Mockito</td><td>pytest / unittest</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== SECTION 1: JVM ===== -->
+<section id="jvm">
+  <div class="section-tag">Foundation</div>
+  <h1>JVM — How Java Actually Runs</h1>
+  <p class="subtitle">The JVM is Java's V8 engine + Node.js runtime combined. Before Spring Boot makes sense, this must be clear.</p>
+
+  <div class="story-box">
+    <div class="story-label">🧠 Mental Model</div>
+    <p>In JavaScript: you write <span class="inline-code">.js</span> → V8 reads it → executes directly. In Java: you write <span class="inline-code">.java</span> → compiler turns it into <span class="inline-code">.class</span> (bytecode) → JVM runs the bytecode. The bytecode is <strong>platform-neutral</strong> — it runs on any JVM, on any OS. That's the "Write Once, Run Anywhere" promise.</p>
+  </div>
+
+  <h2>JDK vs JRE vs JVM — The Three Layers</h2>
+  <div class="layer-stack">
+    <div class="layer" style="background:rgba(248,152,32,0.08);border-color:var(--java);">
+      <div><div class="layer-name" style="color:var(--java);">JDK — Java Development Kit</div><div class="layer-desc">javac compiler + JRE + debugging tools. You install this on dev machines.</div></div>
+      <span class="badge badge-java">Install this</span>
+    </div>
+    <div class="layer" style="background:rgba(80,200,160,0.05);border-color:var(--accent2);">
+      <div><div class="layer-name" style="color:var(--accent2);">JRE — Java Runtime Environment</div><div class="layer-desc">JVM + standard libraries (java.util, java.io, etc). What end-users needed historically.</div></div>
+      <span class="badge badge-new">Bundled in JDK</span>
+    </div>
+    <div class="layer" style="background:rgba(108,138,255,0.05);border-color:var(--accent);">
+      <div><div class="layer-name" style="color:var(--accent);">JVM — Java Virtual Machine</div><div class="layer-desc">Executes bytecode. Manages memory (GC), threads, JIT compilation, security sandbox.</div></div>
+      <span class="badge badge-key">The engine</span>
+    </div>
+  </div>
+
+  <h2>Java Code → Running Program: The Pipeline</h2>
+  <div class="pipeline">
+    <div class="pipe-step"><div class="icon">📝</div><div class="name">MyApp.java</div><div class="desc">Source code</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">⚙️</div><div class="name">javac</div><div class="desc">Compiler</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">📦</div><div class="name">MyApp.class</div><div class="desc">Bytecode</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🖥️</div><div class="name">JVM loads</div><div class="desc">Class loader</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">⚡</div><div class="name">JIT compile</div><div class="desc">Hot paths → native</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🚀</div><div class="name">Execute</div><div class="desc">Native CPU</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card java">
+      <div class="card-label">JVM Memory — Heap vs Stack</div>
+      <pre><span class="cmt">// Stack: method calls, local variables</span>
+<span class="cmt">// Each thread gets its own stack</span>
+<span class="kw">public void</span> <span class="fn">processOrder</span>(Order order) {
+    <span class="kw">int</span> total = order.getTotal(); <span class="cmt">// stack</span>
+    <span class="cmt">// ^^ lives here only during method</span>
+}
+
+<span class="cmt">// Heap: all objects live here</span>
+<span class="cmt">// Shared across threads</span>
+<span class="cmt">// Managed by Garbage Collector</span>
+Order order = <span class="kw">new</span> Order(); <span class="cmt">// heap</span>
+List&lt;Item&gt; items = <span class="kw">new</span> ArrayList&lt;&gt;(); <span class="cmt">// heap</span>
+
+<span class="cmt">// GC automatically frees unreachable objects</span>
+<span class="cmt">// No manual free() like C/C++</span>
+<span class="cmt">// But can cause GC pause → latency spikes</span></pre>
+    </div>
+    <div class="card spring">
+      <div class="card-label">JIT Compilation — Why Java Gets Faster Over Time</div>
+      <pre><span class="cmt">// JIT = Just-In-Time compilation</span>
+<span class="cmt">// JVM starts interpreting bytecode (slow)</span>
+<span class="cmt">// Tracks "hot" code paths</span>
+<span class="cmt">// Compiles hot paths to native machine code</span>
+
+<span class="cmt">// Example: this loop runs 1M times</span>
+<span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i &lt; <span class="num">1000000</span>; i++) {
+    doWork();  <span class="cmt">// JIT makes this native after ~10k</span>
+}
+
+<span class="cmt">// ⚡ That's why Java apps are slow to start</span>
+<span class="cmt">// but reach near-C++ speed after warmup</span>
+<span class="cmt">// GraalVM Native Image solves cold start</span>
+<span class="cmt">// → compiles to native binary ahead of time</span></pre>
+    </div>
+  </div>
+
+  <h2>Java Versions & LTS — Which One to Use</h2>
+  <div class="card amber">
+    <div class="card-label">LTS Release Schedule</div>
+    <pre><span class="cmt">// LTS = Long Term Support</span>
+<span class="cmt">// Java 8  → LTS, still widely used (legacy)</span>
+<span class="cmt">// Java 11 → LTS, first modern Java</span>
+<span class="cmt">// Java 17 → LTS, Spring Boot 3 minimum</span>
+<span class="cmt">// Java 21 → LTS, Virtual Threads (Project Loom) ← USE THIS</span>
+<span class="cmt">// Java 25 → LTS (coming 2025)</span>
+
+<span class="cmt">// ⚠️ Spring Boot 3.x requires Java 17+</span>
+<span class="cmt">// Spring Boot 2.x supports Java 8 (legacy)</span>
+
+<span class="cmt">// Check your version:</span>
+java -version
+<span class="cmt">// openjdk version "21.0.2" 2024-01-16</span>
+
+<span class="cmt">// Install via SDKMAN (recommended — like nvm for Java)</span>
+sdk install java 21-tem
+sdk use java 21-tem</pre>
+  </div>
+
+  <div class="hooks-grid">
+    <div class="hook-card">
+      <div class="emoji">☕</div>
+      <div class="hook-title">JVM Hook</div>
+      <p>JVM = a fake computer inside your real computer. Java programs run on this fake computer. The JVM translates "fake computer instructions" (bytecode) to real CPU instructions. That's why Java runs everywhere — every OS has its own JVM translator.</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">🧹</div>
+      <div class="hook-title">Garbage Collector Hook</div>
+      <p>GC = hotel housekeeping. Objects are guests. When a guest checks out (no more references), housekeeping cleans up automatically. You never call "free memory" — GC does it. But housekeeping takes time → that's the "GC pause" problem.</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">🔥</div>
+      <div class="hook-title">JIT Hook</div>
+      <p>JIT = a chef who gets faster as orders repeat. First pancake = slow (read recipe carefully). After 1000 pancakes = muscle memory, full speed. JVM "learns" your code's hot paths and compiles them to native speed. That's why Java warms up slowly but runs fast.</p>
+    </div>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>JDK</strong> = install on dev machine (includes compiler). <strong>JVM</strong> = the engine that runs bytecode. <strong>Bytecode</strong> = platform-neutral instructions (.class files). <strong>Heap</strong> = all objects live here, GC manages it. <strong>Stack</strong> = method calls + locals, per-thread. <strong>JIT</strong> = hot code paths become native machine code over time. <strong>Java 21 LTS</strong> = use this for Spring Boot 3.
+  </div>
+</section>
+
+<!-- ===== SECTION 2: Maven & Gradle ===== -->
+<section id="build-tools">
+  <div class="section-tag">Dependency Management</div>
+  <h1>Maven & Gradle — Java's npm</h1>
+  <p class="subtitle">Maven and Gradle are to Java what npm is to Node.js. They manage dependencies, build lifecycle, and produce deployable artifacts.</p>
+
+  <div class="code-compare">
+    <div>
+      <span class="code-side-label before-label">JavaScript</span>
+      <pre style="margin-top:0;border-radius:0 8px 8px 8px;"><span class="cmt">// package.json</span>
+{
+  <span class="str">"name"</span>: <span class="str">"my-app"</span>,
+  <span class="str">"version"</span>: <span class="str">"1.0.0"</span>,
+  <span class="str">"dependencies"</span>: {
+    <span class="str">"express"</span>: <span class="str">"^4.18.0"</span>,
+    <span class="str">"axios"</span>: <span class="str">"^1.6.0"</span>
+  },
+  <span class="str">"devDependencies"</span>: {
+    <span class="str">"jest"</span>: <span class="str">"^29.0.0"</span>
+  },
+  <span class="str">"scripts"</span>: {
+    <span class="str">"start"</span>: <span class="str">"node index.js"</span>,
+    <span class="str">"test"</span>: <span class="str">"jest"</span>,
+    <span class="str">"build"</span>: <span class="str">"tsc"</span>
+  }
+}</pre>
+    </div>
+    <div>
+      <span class="code-side-label spring-label">Maven (pom.xml)</span>
+      <pre style="margin-top:0;border-radius:0 8px 8px 8px;"><span class="cmt">&lt;!-- pom.xml --&gt;</span>
+<span class="tag">&lt;project&gt;</span>
+  <span class="tag">&lt;groupId&gt;</span>com.mycompany<span class="tag">&lt;/groupId&gt;</span>
+  <span class="tag">&lt;artifactId&gt;</span>my-app<span class="tag">&lt;/artifactId&gt;</span>
+  <span class="tag">&lt;version&gt;</span>1.0.0<span class="tag">&lt;/version&gt;</span>
+
+  <span class="tag">&lt;dependencies&gt;</span>
+    <span class="tag">&lt;dependency&gt;</span>
+      <span class="tag">&lt;groupId&gt;</span>org.springframework.boot<span class="tag">&lt;/groupId&gt;</span>
+      <span class="tag">&lt;artifactId&gt;</span>spring-boot-starter-web<span class="tag">&lt;/artifactId&gt;</span>
+    <span class="tag">&lt;/dependency&gt;</span>
+    <span class="tag">&lt;dependency&gt;</span>
+      <span class="tag">&lt;groupId&gt;</span>org.springframework.boot<span class="tag">&lt;/groupId&gt;</span>
+      <span class="tag">&lt;artifactId&gt;</span>spring-boot-starter-test<span class="tag">&lt;/artifactId&gt;</span>
+      <span class="tag">&lt;scope&gt;</span>test<span class="tag">&lt;/scope&gt;</span>
+    <span class="tag">&lt;/dependency&gt;</span>
+  <span class="tag">&lt;/dependencies&gt;</span>
+<span class="tag">&lt;/project&gt;</span></pre>
+    </div>
+  </div>
+
+  <h2>Maven Build Lifecycle — The npm scripts Equivalent</h2>
+  <div class="pipeline">
+    <div class="pipe-step"><div class="icon">🧹</div><div class="name">clean</div><div class="desc">Delete target/</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">✅</div><div class="name">validate</div><div class="desc">Check pom.xml</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">⚙️</div><div class="name">compile</div><div class="desc">javac → .class</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🧪</div><div class="name">test</div><div class="desc">Run JUnit tests</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">📦</div><div class="name">package</div><div class="desc">Build .jar/.war</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🔍</div><div class="name">verify</div><div class="desc">Integration tests</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🚀</div><div class="name">install</div><div class="desc">→ local repo</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">☁️</div><div class="name">deploy</div><div class="desc">→ remote repo</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-label" style="color:var(--java);">Maven vs Gradle vs npm — Side by Side</div>
+    <table class="comp-table" style="margin:0;">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>npm</th>
+          <th class="java-col">Maven</th>
+          <th class="spring-col">Gradle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Install deps</td><td>npm install</td><td>mvn dependency:resolve</td><td>gradle dependencies</td></tr>
+        <tr><td>Build</td><td>npm run build</td><td>mvn package</td><td>gradle build</td></tr>
+        <tr><td>Run tests</td><td>npm test</td><td>mvn test</td><td>gradle test</td></tr>
+        <tr><td>Clean</td><td>rm -rf dist/</td><td>mvn clean</td><td>gradle clean</td></tr>
+        <tr><td>Run app</td><td>npm start</td><td>mvn spring-boot:run</td><td>gradle bootRun</td></tr>
+        <tr><td>Config file</td><td>package.json</td><td>pom.xml</td><td>build.gradle(.kts)</td></tr>
+        <tr><td>Lock file</td><td>package-lock.json</td><td>pom.xml (fixed versions)</td><td>gradle.lockfile</td></tr>
+        <tr><td>Dep cache</td><td>node_modules/</td><td>~/.m2/repository/</td><td>~/.gradle/caches/</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Maven Coordinates — How Java Finds Packages</h2>
+  <div class="card amber">
+    <div class="card-label">groupId:artifactId:version — The Java Package Address</div>
+    <pre><span class="cmt">// npm: "express": "^4.18.0"</span>
+<span class="cmt">// Maven uses THREE parts: groupId + artifactId + version</span>
+
+<span class="cmt">// groupId    = company/org namespace (like npm scope @company/)</span>
+<span class="cmt">// artifactId = the specific library name</span>
+<span class="cmt">// version    = exact or range</span>
+
+<span class="tag">&lt;dependency&gt;</span>
+  <span class="tag">&lt;groupId&gt;</span>org.springframework.boot<span class="tag">&lt;/groupId&gt;</span>   <span class="cmt">&lt;!-- org --&gt;</span>
+  <span class="tag">&lt;artifactId&gt;</span>spring-boot-starter-web<span class="tag">&lt;/artifactId&gt;</span><span class="cmt">&lt;!-- library --&gt;</span>
+  <span class="cmt">&lt;!-- version managed by Spring Boot BOM --&gt;</span>
+<span class="tag">&lt;/dependency&gt;</span>
+
+<span class="cmt">// Downloaded to: ~/.m2/repository/org/springframework/boot/...</span>
+<span class="cmt">// That's the ~/.m2 folder = Java's node_modules (but GLOBAL, shared)</span>
+<span class="cmt">// Once downloaded, never downloaded again for any project</span>
+
+<span class="cmt">// Maven Central = npmjs.org for Java</span>
+<span class="cmt">// search.maven.org to find packages</span></pre>
+  </div>
+
+  <h2>Spring Boot Parent POM — The BOM (Bill of Materials)</h2>
+  <div class="card spring">
+    <div class="card-label">Parent POM = Shared Version Management</div>
+    <pre><span class="cmt">&lt;!-- This single line manages 300+ dependency versions --&gt;</span>
+<span class="tag">&lt;parent&gt;</span>
+  <span class="tag">&lt;groupId&gt;</span>org.springframework.boot<span class="tag">&lt;/groupId&gt;</span>
+  <span class="tag">&lt;artifactId&gt;</span>spring-boot-starter-parent<span class="tag">&lt;/artifactId&gt;</span>
+  <span class="tag">&lt;version&gt;</span>3.2.0<span class="tag">&lt;/version&gt;</span>
+<span class="tag">&lt;/parent&gt;</span>
+
+<span class="cmt">&lt;!-- Now you DON'T need to specify versions for Spring deps --&gt;</span>
+<span class="tag">&lt;dependency&gt;</span>
+  <span class="tag">&lt;groupId&gt;</span>org.springframework.boot<span class="tag">&lt;/groupId&gt;</span>
+  <span class="tag">&lt;artifactId&gt;</span>spring-boot-starter-data-jpa<span class="tag">&lt;/artifactId&gt;</span>
+  <span class="cmt">&lt;!-- No version needed! Parent manages it --&gt;</span>
+<span class="tag">&lt;/dependency&gt;</span>
+
+<span class="cmt">&lt;!-- Same for Hibernate, Jackson, Tomcat, etc --&gt;</span>
+<span class="cmt">&lt;!-- Spring Boot guarantees ALL these versions work together --&gt;</span>
+<span class="cmt">&lt;!-- That's the "opinionated defaults" Spring Boot is famous for --&gt;</span></pre>
+  </div>
+
+  <div class="hooks-grid">
+    <div class="hook-card">
+      <div class="emoji">🏦</div>
+      <div class="hook-title">~/.m2 Hook</div>
+      <p>~/.m2 = global bank vault for Java jars. npm downloads to node_modules per project (10 projects = 10 copies). Maven downloads to ~/.m2 ONCE (10 projects = 1 copy + 10 symlinks). CI machines start fresh → must download again. Use a Nexus proxy to cache.</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">🧾</div>
+      <div class="hook-title">BOM / Parent POM Hook</div>
+      <p>Parent POM = restaurant set menu. You say "I want the Spring Boot set." Chef (Maven) picks all compatible dishes (library versions). You don't pick each dish separately. Override one item if needed — but Spring guarantees the set works together.</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">📦</div>
+      <div class="hook-title">Fat JAR Hook</div>
+      <p>Maven packages → .jar (fat jar). This jar contains YOUR code + ALL dependencies inside one file. Like a self-contained shipping container. java -jar myapp.jar = instant run, no npm install needed. That's why Spring Boot deployments are so easy.</p>
+    </div>
+  </div>
+
+  <div class="reverse-box">
+    <div class="rev-label">🔄 What Breaks Without Understanding Maven</div>
+    <ul style="font-size:13.5px;">
+      <li><strong>Version conflicts</strong> → Two libraries need different versions of the same transitive dep. Maven picks one silently — wrong one can cause runtime exceptions.</li>
+      <li><strong>Not using parent POM</strong> → Specifying versions manually → incompatible library combinations → cryptic ClassNotFoundException at runtime.</li>
+      <li><strong>Missing scope=test</strong> → Test libraries bundled into production jar → larger artifact, possible security issues.</li>
+      <li><strong>Skipping mvn clean</strong> → Stale .class files from deleted source → mysterious runtime behavior that doesn't match code.</li>
+      <li><strong>Not checking ~/.m2 on CI</strong> → Every build downloads all dependencies → 5-minute CI builds, rate-limited by Maven Central.</li>
+    </ul>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>pom.xml</strong> = package.json for Java. <strong>~/.m2</strong> = global npm cache (shared across projects). <strong>groupId:artifactId:version</strong> = 3-part address for any Java library. <strong>Parent POM / BOM</strong> = version manager for 300+ Spring libs. <strong>mvn package</strong> = creates fat .jar with all deps inside. <strong>Maven Central</strong> = npmjs.org for Java.
+  </div>
+</section>
+
+<!-- ===== SECTION 3: SPRING CORE ===== -->
+<section id="spring-core">
+  <div class="section-tag">Spring Framework</div>
+  <h1>Spring Core — IoC & Dependency Injection</h1>
+  <p class="subtitle">IoC is the foundational pattern Spring is built on. Everything else (Boot, MVC, Security, Data) plugs into this container.</p>
+
+  <div class="story-box">
+    <div class="story-label">🧠 The Mental Model</div>
+    <p>Normally YOU create objects: <span class="inline-code">UserService service = new UserService(repo);</span>. With IoC, you flip it — you say "I need a UserService" and <strong>Spring creates it and gives it to you</strong>. Spring is the factory manager. Your code declares needs (dependencies), Spring figures out how to satisfy them. That's Inversion of Control.</p>
+  </div>
+
+  <h2>The Problem IoC Solves</h2>
+  <div class="code-compare">
+    <div>
+      <span class="code-side-label before-label">Without IoC (tightly coupled)</span>
+      <pre style="margin-top:0;border-radius:0 8px 8px 8px;"><span class="cmt">// You manually wire everything</span>
+<span class="kw">public class</span> <span class="type">OrderController</span> {
+  <span class="kw">private</span> OrderService orderService;
+
+  <span class="kw">public</span> <span class="fn">OrderController</span>() {
+    <span class="cmt">// Hard-coded dependency creation</span>
+    <span class="type">UserRepository</span> userRepo =
+      <span class="kw">new</span> UserRepository(
+        <span class="kw">new</span> DatabaseConnection(
+          <span class="kw">new</span> Config(<span class="str">"db.properties"</span>)
+        )
+      );
+    <span class="kw">this</span>.orderService =
+      <span class="kw">new</span> OrderService(userRepo);
+  }
+}
+<span class="cmt">// Problems:</span>
+<span class="cmt">// - Hard to test (can't mock)</span>
+<span class="cmt">// - Change DB config → change 5 classes</span>
+<span class="cmt">// - Duplicated creation logic everywhere</span></pre>
+    </div>
+    <div>
+      <span class="code-side-label spring-label">With Spring IoC (loosely coupled)</span>
+      <pre style="margin-top:0;border-radius:0 8px 8px 8px;"><span class="cmt">// Spring creates & wires everything</span>
+<span class="ann">@RestController</span>
+<span class="kw">public class</span> <span class="type">OrderController</span> {
+
+  <span class="cmt">// "I need an OrderService"</span>
+  <span class="cmt">// Spring provides one</span>
+  <span class="ann">@Autowired</span>  <span class="cmt">// or constructor injection</span>
+  <span class="kw">private</span> OrderService orderService;
+
+  <span class="cmt">// That's it. Spring handles:</span>
+  <span class="cmt">// - Creating OrderService</span>
+  <span class="cmt">// - Creating its dependencies</span>
+  <span class="cmt">// - Managing lifecycle</span>
+  <span class="cmt">// - Singleton scope by default</span>
+}
+<span class="cmt">// Benefits:</span>
+<span class="cmt">// - Easy to test (inject mocks)</span>
+<span class="cmt">// - Change DB → change 1 config file</span></pre>
+    </div>
+  </div>
+
+  <h2>Spring Beans — What Goes in the Container</h2>
+  <div class="card spring">
+    <div class="card-label">A "Bean" is just a Spring-managed object</div>
+    <pre><span class="cmt">// 4 ways to declare a Bean:</span>
+
+<span class="cmt">// 1. @Component — generic bean (+ @Service, @Repository, @Controller)</span>
+<span class="ann">@Service</span>  <span class="cmt">// tells Spring: manage this class</span>
+<span class="kw">public class</span> <span class="type">EmailService</span> { ... }
+
+<span class="cmt">// 2. @Bean in a @Configuration class</span>
+<span class="ann">@Configuration</span>
+<span class="kw">public class</span> <span class="type">AppConfig</span> {
+  <span class="ann">@Bean</span>
+  <span class="kw">public</span> <span class="type">RestTemplate</span> <span class="fn">restTemplate</span>() {
+    <span class="kw">return new</span> RestTemplate(); <span class="cmt">// Spring manages lifecycle</span>
+  }
+}
+
+<span class="cmt">// 3. Spring Boot auto-configuration (see next section)</span>
+<span class="cmt">// 4. @ComponentScan — Spring scans packages for @Component classes</span>
+
+<span class="cmt">// Bean scopes:</span>
+<span class="ann">@Scope</span>(<span class="str">"singleton"</span>) <span class="cmt">// default — one instance for whole app</span>
+<span class="ann">@Scope</span>(<span class="str">"prototype"</span>) <span class="cmt">// new instance each time requested</span>
+<span class="ann">@Scope</span>(<span class="str">"request"</span>)   <span class="cmt">// new instance per HTTP request</span>
+<span class="ann">@Scope</span>(<span class="str">"session"</span>)   <span class="cmt">// new instance per HTTP session</span></pre>
+  </div>
+
+  <h2>Constructor Injection vs Field Injection</h2>
+  <div class="code-compare">
+    <div>
+      <span class="code-side-label before-label">Field Injection (avoid)</span>
+      <pre style="margin-top:0;border-radius:0 8px 8px 8px;"><span class="ann">@Service</span>
+<span class="kw">public class</span> <span class="type">OrderService</span> {
+
+  <span class="ann">@Autowired</span>  <span class="cmt">// ← avoid this</span>
+  <span class="kw">private</span> OrderRepository repo;
+
+  <span class="cmt">// Problems:</span>
+  <span class="cmt">// - Can't test without Spring context</span>
+  <span class="cmt">// - Hidden dependencies</span>
+  <span class="cmt">// - Can't make fields final</span>
+  <span class="cmt">// - Circular dep problems hidden</span>
+}</pre>
+    </div>
+    <div>
+      <span class="code-side-label spring-label">Constructor Injection (preferred)</span>
+      <pre style="margin-top:0;border-radius:0 8px 8px 8px;"><span class="ann">@Service</span>
+<span class="kw">public class</span> <span class="type">OrderService</span> {
+
+  <span class="kw">private final</span> OrderRepository repo;
+
+  <span class="cmt">// @Autowired optional if single constructor</span>
+  <span class="kw">public</span> <span class="fn">OrderService</span>(OrderRepository repo) {
+    <span class="kw">this</span>.repo = repo;
+  }
+  <span class="cmt">// Benefits:</span>
+  <span class="cmt">// - Testable without Spring</span>
+  <span class="cmt">// - Immutable (final field)</span>
+  <span class="cmt">// - Circular deps fail at startup</span>
+  <span class="cmt">// - Lombok @RequiredArgsConstructor</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>IoC</strong> = Spring creates + wires objects, not you. <strong>Bean</strong> = Spring-managed object. <strong>@Component/@Service/@Repository</strong> = tell Spring to manage this class. <strong>@Autowired</strong> = "give me a bean of this type". <strong>Singleton scope</strong> = default, one instance shared. <strong>Constructor injection</strong> = preferred (testable, immutable, clear deps).
+  </div>
+</section>
+
+<!-- ===== SECTION 4: SPRING BOOT ===== -->
+<section id="spring-boot">
+  <div class="section-tag">Spring Boot</div>
+  <h1>Spring Boot — Auto-Configuration Magic</h1>
+  <p class="subtitle">Spring Boot is Spring with all the config pre-done. It's the difference between assembling a car from parts vs buying one ready to drive.</p>
+
+  <div class="story-box">
+    <div class="story-label">🧠 What Spring Boot Actually Does</div>
+    <p>Spring Framework (pre-Boot) required hundreds of lines of XML config to set up a web server. Spring Boot reads your classpath, sees you have <span class="inline-code">spring-boot-starter-web</span>, and auto-configures Tomcat, Jackson, MVC, error handling — all of it. The magic word is <strong>Auto-Configuration</strong>. "If you have X on classpath and Y bean doesn't exist → create Y automatically."</p>
+  </div>
+
+  <h2>Starters — Pre-packaged Dependency Bundles</h2>
+  <div class="card amber">
+    <div class="card-label">spring-boot-starter-* = npm meta-packages</div>
+    <pre><span class="cmt">// ONE starter = MANY coordinated dependencies</span>
+
+<span class="cmt">// spring-boot-starter-web includes:</span>
+<span class="cmt">// - spring-webmvc (MVC framework)</span>
+<span class="cmt">// - spring-web (core web classes)</span>
+<span class="cmt">// - tomcat-embed-core (embedded Tomcat server)</span>
+<span class="cmt">// - jackson-databind (JSON serialization)</span>
+<span class="cmt">// - spring-boot-starter (core Boot)</span>
+
+<span class="cmt">// Common starters:</span>
+spring-boot-starter-web          <span class="cmt">// REST APIs, MVC</span>
+spring-boot-starter-data-jpa     <span class="cmt">// Hibernate, JPA, DB</span>
+spring-boot-starter-security     <span class="cmt">// Authentication/AuthZ</span>
+spring-boot-starter-test         <span class="cmt">// JUnit 5, Mockito, etc</span>
+spring-boot-starter-actuator     <span class="cmt">// Health, metrics, monitoring</span>
+spring-boot-starter-validation   <span class="cmt">// Bean validation (@NotNull, etc)</span>
+spring-boot-starter-mail         <span class="cmt">// Email sending</span>
+spring-boot-starter-cache        <span class="cmt">// Caching (@Cacheable)</span>
+spring-boot-starter-amqp         <span class="cmt">// RabbitMQ</span>
+spring-boot-starter-data-redis   <span class="cmt">// Redis</span></pre>
+  </div>
+
+  <h2>@SpringBootApplication — The Entry Point</h2>
+  <div class="card spring">
+    <div class="card-label">The main class — like index.js in Node.js</div>
+    <pre><span class="cmt">// The main class — equivalent to index.js</span>
+<span class="ann">@SpringBootApplication</span>  <span class="cmt">// This one annotation does 3 things:</span>
+<span class="kw">public class</span> <span class="type">MyApp</span> {
+
+  <span class="kw">public static void</span> <span class="fn">main</span>(String[] args) {
+    SpringApplication.<span class="fn">run</span>(MyApp.<span class="kw">class</span>, args);
+    <span class="cmt">// Starts embedded Tomcat on port 8080</span>
+    <span class="cmt">// Scans for beans in this package + children</span>
+    <span class="cmt">// Runs all auto-configurations</span>
+  }
+}
+
+<span class="cmt">// @SpringBootApplication = combination of:</span>
+<span class="ann">@SpringBootConfiguration</span>  <span class="cmt">// marks as config class</span>
+<span class="ann">@EnableAutoConfiguration</span>  <span class="cmt">// triggers auto-config magic</span>
+<span class="ann">@ComponentScan</span>            <span class="cmt">// scans this package for beans</span>
+
+<span class="cmt">// Run it:</span>
+mvn spring-boot:run
+<span class="cmt">// Or: java -jar target/myapp-1.0.0.jar</span></pre>
+  </div>
+
+  <h2>application.properties / application.yml — Spring's .env</h2>
+  <div class="code-compare">
+    <div>
+      <span class="code-side-label before-label">application.properties</span>
+      <pre style="margin-top:0;border-radius:0 8px 8px 8px;"><span class="cmt"># Server config</span>
+server.port=8080
+server.servlet.context-path=/api
+
+<span class="cmt"># Database</span>
+spring.datasource.url=jdbc:postgresql://localhost:5432/mydb
+spring.datasource.username=admin
+spring.datasource.password=${DB_PASSWORD}
+
+<span class="cmt"># JPA / Hibernate</span>
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+<span class="cmt"># Logging</span>
+logging.level.com.mycompany=DEBUG
+logging.level.org.springframework.web=INFO
+
+<span class="cmt"># Custom properties</span>
+app.jwt.secret=${JWT_SECRET}
+app.jwt.expiration=86400000</pre>
+    </div>
+    <div>
+      <span class="code-side-label spring-label">Profiles — like .env.production</span>
+      <pre style="margin-top:0;border-radius:0 8px 8px 8px;"><span class="cmt"># application.yml (YAML format, same thing)</span>
+spring:
+  profiles:
+    active: dev  <span class="cmt"># switch between dev/prod/test</span>
+
+---
+<span class="cmt"># application-dev.yml</span>
+spring:
+  datasource:
+    url: jdbc:h2:mem:devdb  <span class="cmt"># in-memory DB for dev</span>
+  jpa:
+    show-sql: <span class="kw">true</span>
+
+---
+<span class="cmt"># application-prod.yml</span>
+spring:
+  datasource:
+    url: jdbc:postgresql://prod-db:5432/app
+    username: ${DB_USER}    <span class="cmt"># from env vars</span>
+    password: ${DB_PASS}
+  jpa:
+    show-sql: <span class="kw">false</span>
+
+<span class="cmt"># Run with profile:</span>
+<span class="cmt"># java -jar app.jar --spring.profiles.active=prod</span></pre>
+    </div>
+  </div>
+
+  <div class="hooks-grid">
+    <div class="hook-card">
+      <div class="emoji">🪄</div>
+      <div class="hook-title">Auto-Config Hook</div>
+      <p>Auto-config = smart home system. When you add H2 jar to classpath, Spring sees it and thinks "they probably want an in-memory DB" — auto-creates DataSource bean. When you add a real DataSource bean, Spring backs off ("they know what they want"). It always defers to your explicit config.</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">📦</div>
+      <div class="hook-title">Starter Hook</div>
+      <p>Starter = Amazon bundle deal. "Buy web dev kit" → ships server, JSON parser, web framework, error handler. All pre-tested together. You don't hunt individual parts. One line in pom.xml → entire production-ready HTTP stack.</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">🏡</div>
+      <div class="hook-title">Embedded Server Hook</div>
+      <p>Old Java: deploy .war file to external Tomcat server (like needing NGINX already installed). Spring Boot: Tomcat is INSIDE the jar. Like an Airbnb with the key inside the lockbox. The jar IS the server. Deploy anywhere with just JDK installed.</p>
+    </div>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>Starter</strong> = bundle of pre-tested dependencies for one concern. <strong>Auto-configuration</strong> = Spring detects classpath and creates beans automatically (backs off if you define your own). <strong>@SpringBootApplication</strong> = entry point + component scan + auto-config trigger. <strong>application.yml</strong> = .env file for Spring. <strong>Profiles</strong> = dev/prod/test config switching. <strong>Fat JAR</strong> = app + Tomcat + all deps = one deployable file.
+  </div>
+</section>
+
+<!-- ===== SECTION 5: SPRING MVC ===== -->
+<section id="spring-mvc">
+  <div class="section-tag">HTTP Layer</div>
+  <h1>Spring MVC — The HTTP Request Lifecycle</h1>
+  <p class="subtitle">Spring MVC handles every HTTP request from the moment it arrives to when the response leaves. This is your Express.js.</p>
+
+  <h2>The Request Lifecycle</h2>
+  <div class="pipeline" style="flex-wrap:wrap;gap:6px;">
+    <div class="pipe-step"><div class="icon">📡</div><div class="name">HTTP Request</div><div class="desc">Client sends</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🚪</div><div class="name">Filter Chain</div><div class="desc">Security, CORS, logging</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🎯</div><div class="name">DispatcherServlet</div><div class="desc">Front controller</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🗺️</div><div class="name">Handler Mapping</div><div class="desc">Find @Controller</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🔧</div><div class="name">Interceptors</div><div class="desc">Pre/post hooks</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🏗️</div><div class="name">Controller Method</div><div class="desc">Your code runs</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">📤</div><div class="name">Response</div><div class="desc">JSON + status</div></div>
+  </div>
+
+  <h2>Controllers — Your Route Handlers</h2>
+  <div class="card spring">
+    <div class="card-label">@RestController — like Express router</div>
+    <pre><span class="ann">@RestController</span>              <span class="cmt">// = @Controller + @ResponseBody</span>
+<span class="ann">@RequestMapping</span>(<span class="str">"/api/orders"</span>) <span class="cmt">// base path for all methods</span>
+<span class="kw">public class</span> <span class="type">OrderController</span> {
+
+  <span class="kw">private final</span> OrderService orderService;
+
+  <span class="kw">public</span> <span class="fn">OrderController</span>(OrderService orderService) {
+    <span class="kw">this</span>.orderService = orderService;
+  }
+
+  <span class="cmt">// GET /api/orders</span>
+  <span class="ann">@GetMapping</span>
+  <span class="kw">public</span> List&lt;Order&gt; <span class="fn">getAllOrders</span>() {
+    <span class="kw">return</span> orderService.<span class="fn">findAll</span>();
+  }
+
+  <span class="cmt">// GET /api/orders/42</span>
+  <span class="ann">@GetMapping</span>(<span class="str">"/{id}"</span>)
+  <span class="kw">public</span> ResponseEntity&lt;Order&gt; <span class="fn">getOrder</span>(<span class="ann">@PathVariable</span> Long id) {
+    <span class="kw">return</span> orderService.<span class="fn">findById</span>(id)
+      .map(ResponseEntity::ok)
+      .orElse(ResponseEntity.<span class="fn">notFound</span>().<span class="fn">build</span>());
+  }
+
+  <span class="cmt">// POST /api/orders</span>
+  <span class="ann">@PostMapping</span>
+  <span class="ann">@ResponseStatus</span>(HttpStatus.CREATED)
+  <span class="kw">public</span> Order <span class="fn">createOrder</span>(<span class="ann">@RequestBody</span> <span class="ann">@Valid</span> CreateOrderRequest req) {
+    <span class="kw">return</span> orderService.<span class="fn">create</span>(req);
+    <span class="cmt">// @Valid triggers Bean Validation (JSR-380)</span>
+  }
+
+  <span class="cmt">// GET /api/orders?status=PENDING&page=0&size=20</span>
+  <span class="ann">@GetMapping</span>(<span class="str">"/search"</span>)
+  <span class="kw">public</span> Page&lt;Order&gt; <span class="fn">search</span>(
+    <span class="ann">@RequestParam</span> String status,
+    Pageable pageable        <span class="cmt">// Spring auto-injects from query params</span>
+  ) {
+    <span class="kw">return</span> orderService.<span class="fn">findByStatus</span>(status, pageable);
+  }
+}</pre>
+  </div>
+
+  <h2>Exception Handling — Global Error Handler</h2>
+  <div class="card accent">
+    <div class="card-label">@ControllerAdvice — Centralized Error Handling</div>
+    <pre><span class="ann">@RestControllerAdvice</span>  <span class="cmt">// handles exceptions from ALL controllers</span>
+<span class="kw">public class</span> <span class="type">GlobalExceptionHandler</span> {
+
+  <span class="ann">@ExceptionHandler</span>(ResourceNotFoundException.<span class="kw">class</span>)
+  <span class="ann">@ResponseStatus</span>(HttpStatus.NOT_FOUND)
+  <span class="kw">public</span> ErrorResponse <span class="fn">handleNotFound</span>(ResourceNotFoundException ex) {
+    <span class="kw">return new</span> ErrorResponse(<span class="str">"NOT_FOUND"</span>, ex.<span class="fn">getMessage</span>());
+  }
+
+  <span class="ann">@ExceptionHandler</span>(MethodArgumentNotValidException.<span class="kw">class</span>)
+  <span class="ann">@ResponseStatus</span>(HttpStatus.BAD_REQUEST)
+  <span class="kw">public</span> ErrorResponse <span class="fn">handleValidation</span>(MethodArgumentNotValidException ex) {
+    List&lt;String&gt; errors = ex.<span class="fn">getBindingResult</span>().<span class="fn">getFieldErrors</span>()
+      .stream()
+      .<span class="fn">map</span>(fe -> fe.<span class="fn">getField</span>() + <span class="str">": "</span> + fe.<span class="fn">getDefaultMessage</span>())
+      .<span class="fn">collect</span>(Collectors.<span class="fn">toList</span>());
+    <span class="kw">return new</span> ErrorResponse(<span class="str">"VALIDATION_FAILED"</span>, errors);
+  }
+}
+
+<span class="cmt">// Request Validation DTOs</span>
+<span class="kw">public record</span> <span class="type">CreateOrderRequest</span>(
+  <span class="ann">@NotBlank</span> String customerId,
+  <span class="ann">@NotEmpty</span> List&lt;OrderItem&gt; items,
+  <span class="ann">@Positive</span> BigDecimal totalAmount
+) {}</pre>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>DispatcherServlet</strong> = front controller, receives all requests. <strong>@RestController</strong> = @Controller + auto JSON serialization. <strong>@GetMapping/@PostMapping</strong> = route handlers. <strong>@PathVariable</strong> = /orders/{id}. <strong>@RequestBody</strong> = parse JSON body. <strong>@RequestParam</strong> = ?key=value. <strong>@ControllerAdvice</strong> = global exception handler. <strong>@Valid</strong> = trigger Bean Validation annotations.
+  </div>
+</section>
+
+<!-- ===== SECTION 6: SPRING DATA JPA ===== -->
+<section id="spring-data">
+  <div class="section-tag">Database Layer</div>
+  <h1>Spring Data JPA — Your ORM</h1>
+  <p class="subtitle">Spring Data JPA wraps Hibernate ORM. You define entities and repository interfaces — Spring generates all the SQL for you.</p>
+
+  <div class="card spring">
+    <div class="card-label">Entity → Repository → Service → Controller (The Layered Pattern)</div>
+    <pre><span class="cmt">// 1. Entity — maps to DB table</span>
+<span class="ann">@Entity</span>
+<span class="ann">@Table</span>(name = <span class="str">"orders"</span>)
+<span class="kw">public class</span> <span class="type">Order</span> {
+
+  <span class="ann">@Id</span>
+  <span class="ann">@GeneratedValue</span>(strategy = GenerationType.IDENTITY)
+  <span class="kw">private</span> Long id;
+
+  <span class="ann">@Column</span>(nullable = <span class="kw">false</span>)
+  <span class="kw">private</span> String customerId;
+
+  <span class="ann">@Enumerated</span>(EnumType.STRING)
+  <span class="kw">private</span> OrderStatus status;
+
+  <span class="ann">@CreationTimestamp</span>
+  <span class="kw">private</span> LocalDateTime createdAt;
+
+  <span class="cmt">// One Order has many OrderItems</span>
+  <span class="ann">@OneToMany</span>(mappedBy = <span class="str">"order"</span>, cascade = CascadeType.ALL)
+  <span class="kw">private</span> List&lt;OrderItem&gt; items = <span class="kw">new</span> ArrayList&lt;&gt;();
+}
+
+<span class="cmt">// 2. Repository — Spring generates queries from method names</span>
+<span class="kw">public interface</span> <span class="type">OrderRepository</span>
+    <span class="kw">extends</span> JpaRepository&lt;Order, Long&gt; {
+
+  <span class="cmt">// Spring reads method name → generates SQL</span>
+  List&lt;Order&gt; <span class="fn">findByStatus</span>(OrderStatus status);
+  List&lt;Order&gt; <span class="fn">findByCustomerIdAndStatusOrderByCreatedAtDesc</span>(
+    String customerId, OrderStatus status);
+
+  <span class="cmt">// Custom JPQL query</span>
+  <span class="ann">@Query</span>(<span class="str">"SELECT o FROM Order o WHERE o.createdAt > :since"</span>)
+  List&lt;Order&gt; <span class="fn">findRecentOrders</span>(<span class="ann">@Param</span>(<span class="str">"since"</span>) LocalDateTime since);
+
+  <span class="cmt">// JpaRepository already gives you:</span>
+  <span class="cmt">// save(), findById(), findAll(), deleteById()</span>
+  <span class="cmt">// findAll(Pageable), count(), existsById()</span>
+}</pre>
+  </div>
+
+  <h2>N+1 Query Problem — The Most Common Spring Data Bug</h2>
+  <div class="card red">
+    <div class="card-label">⚠️ N+1: The Silent Performance Killer</div>
+    <pre><span class="cmt">// THE PROBLEM: Fetching 100 orders + their items</span>
+List&lt;Order&gt; orders = orderRepo.<span class="fn">findAll</span>();
+<span class="kw">for</span> (Order order : orders) {
+  order.<span class="fn">getItems</span>().<span class="fn">size</span>(); <span class="cmt">// ← TRIGGERS 100 EXTRA QUERIES!</span>
+}
+<span class="cmt">// Total: 1 query (orders) + 100 queries (items) = 101 queries</span>
+<span class="cmt">// Hibernate default: LAZY loading = query per access</span>
+
+<span class="cmt">// THE FIX 1: @EntityGraph (fetch join)</span>
+<span class="ann">@EntityGraph</span>(attributePaths = {<span class="str">"items"</span>})
+List&lt;Order&gt; <span class="fn">findAll</span>(); <span class="cmt">// ← ONE query with JOIN</span>
+
+<span class="cmt">// THE FIX 2: JPQL JOIN FETCH</span>
+<span class="ann">@Query</span>(<span class="str">"SELECT DISTINCT o FROM Order o JOIN FETCH o.items"</span>)
+List&lt;Order&gt; <span class="fn">findAllWithItems</span>();
+
+<span class="cmt">// THE FIX 3: Use spring.jpa.show-sql=true in dev</span>
+<span class="cmt">// See exactly how many queries Hibernate fires</span>
+<span class="cmt">// Use Hypersistence Optimizer or p6spy for deeper analysis</span></pre>
+  </div>
+
+  <h2>Transactions — @Transactional</h2>
+  <div class="card amber">
+    <div class="card-label">@Transactional — All or Nothing</div>
+    <pre><span class="ann">@Service</span>
+<span class="kw">public class</span> <span class="type">OrderService</span> {
+
+  <span class="ann">@Transactional</span>  <span class="cmt">// if ANY exception → rollback ALL DB changes</span>
+  <span class="kw">public</span> Order <span class="fn">createOrder</span>(CreateOrderRequest req) {
+    Order order = <span class="fn">buildOrder</span>(req);
+    orderRepo.<span class="fn">save</span>(order);          <span class="cmt">// DB write 1</span>
+    inventoryService.<span class="fn">deduct</span>(req); <span class="cmt">// DB write 2</span>
+    paymentService.<span class="fn">charge</span>(req);   <span class="cmt">// DB write 3</span>
+    <span class="cmt">// If paymentService throws → writes 1&2 ROLLED BACK</span>
+    <span class="kw">return</span> order;
+  }
+
+  <span class="cmt">// Read-only optimization</span>
+  <span class="ann">@Transactional</span>(readOnly = <span class="kw">true</span>)
+  <span class="kw">public</span> List&lt;Order&gt; <span class="fn">findAll</span>() {
+    <span class="kw">return</span> orderRepo.<span class="fn">findAll</span>();
+    <span class="cmt">// readOnly=true: DB can optimize (skip dirty checking)</span>
+  }
+}
+
+<span class="cmt">// ⚠️ @Transactional only works when called from OUTSIDE the class</span>
+<span class="cmt">// Self-invocation (calling @Transactional method from same class)</span>
+<span class="cmt">// bypasses the proxy → no transaction! Common gotcha.</span></pre>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>@Entity</strong> = maps class to DB table. <strong>JpaRepository</strong> = auto-generated CRUD + custom queries. <strong>Method name queries</strong> = Spring reads method name and writes SQL. <strong>LAZY loading</strong> = default, queries on access → causes N+1. <strong>@EntityGraph/JOIN FETCH</strong> = fix N+1. <strong>@Transactional</strong> = all-or-nothing DB operations, only works via proxy (external calls).
+  </div>
+</section>
+
+<!-- ===== SECTION 7: SPRING SECURITY ===== -->
+<section id="spring-security">
+  <div class="section-tag">Security</div>
+  <h1>Spring Security — Auth & AuthZ</h1>
+  <p class="subtitle">Spring Security intercepts every request before it reaches your controller. JWT + OAuth2 are the modern patterns.</p>
+
+  <h2>Security Filter Chain — The Request Gauntlet</h2>
+  <div class="layer-stack">
+    <div class="layer" style="background:rgba(255,124,124,0.06);border-color:var(--accent4);">
+      <div><div class="layer-name" style="color:var(--accent4);">CorsFilter</div><div class="layer-desc">Check CORS headers. Block cross-origin requests.</div></div>
+      <span style="color:var(--muted);font-size:12px;">Layer 1</span>
+    </div>
+    <div class="layer" style="background:rgba(247,201,75,0.05);border-color:var(--accent3);">
+      <div><div class="layer-name" style="color:var(--accent3);">JwtAuthenticationFilter</div><div class="layer-desc">Extract JWT from header → validate → set SecurityContext.</div></div>
+      <span style="color:var(--muted);font-size:12px;">Layer 2</span>
+    </div>
+    <div class="layer" style="background:rgba(108,138,255,0.05);border-color:var(--accent);">
+      <div><div class="layer-name" style="color:var(--accent);">AuthorizationFilter</div><div class="layer-desc">Check @PreAuthorize / hasRole against SecurityContext.</div></div>
+      <span style="color:var(--muted);font-size:12px;">Layer 3</span>
+    </div>
+    <div class="layer" style="background:rgba(80,200,160,0.05);border-color:var(--accent2);">
+      <div><div class="layer-name" style="color:var(--accent2);">DispatcherServlet → Controller</div><div class="layer-desc">Request reaches your code only if it passed all above.</div></div>
+      <span style="color:var(--muted);font-size:12px;">Your Code</span>
+    </div>
+  </div>
+
+  <div class="card spring">
+    <div class="card-label">SecurityFilterChain — Spring Boot 3 Config</div>
+    <pre><span class="ann">@Configuration</span>
+<span class="ann">@EnableWebSecurity</span>
+<span class="ann">@EnableMethodSecurity</span>  <span class="cmt">// enables @PreAuthorize on methods</span>
+<span class="kw">public class</span> <span class="type">SecurityConfig</span> {
+
+  <span class="ann">@Bean</span>
+  <span class="kw">public</span> SecurityFilterChain <span class="fn">filterChain</span>(HttpSecurity http) <span class="kw">throws</span> Exception {
+    <span class="kw">return</span> http
+      .<span class="fn">csrf</span>(csrf -> csrf.<span class="fn">disable</span>())    <span class="cmt">// REST APIs use JWT, not sessions</span>
+      .<span class="fn">sessionManagement</span>(s -> s
+        .<span class="fn">sessionCreationPolicy</span>(STATELESS)) <span class="cmt">// no session cookies</span>
+      .<span class="fn">authorizeHttpRequests</span>(auth -> auth
+        .<span class="fn">requestMatchers</span>(<span class="str">"/api/auth/**"</span>).<span class="fn">permitAll</span>()  <span class="cmt">// public</span>
+        .<span class="fn">requestMatchers</span>(<span class="str">"/api/admin/**"</span>).<span class="fn">hasRole</span>(<span class="str">"ADMIN"</span>)
+        .<span class="fn">anyRequest</span>().<span class="fn">authenticated</span>()     <span class="cmt">// all else → JWT required</span>
+      )
+      .<span class="fn">addFilterBefore</span>(jwtFilter, UsernamePasswordAuthenticationFilter.<span class="kw">class</span>)
+      .<span class="fn">build</span>();
+  }
+
+  <span class="cmt">// Method-level security</span>
+  <span class="ann">@PreAuthorize</span>(<span class="str">"hasRole('ADMIN') or #userId == authentication.name"</span>)
+  <span class="kw">public</span> User <span class="fn">getUser</span>(String userId) { ... }
+}</pre>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>Filter Chain</strong> = security gauntlet before controller. <strong>JWT</strong> = stateless auth token, no session. <strong>SecurityContext</strong> = holds current user per-thread. <strong>@PreAuthorize</strong> = method-level role check. <strong>STATELESS sessions</strong> = no cookies, each request carries JWT. <strong>csrf.disable()</strong> = correct for REST APIs (CSRF is a browser-session attack).
+  </div>
+</section>
+
+<!-- ===== SECTION 8: ACTUATOR ===== -->
+<section id="spring-actuator">
+  <div class="section-tag">Observability</div>
+  <h1>Actuator & DevTools — Monitoring in Production</h1>
+  <p class="subtitle">Actuator exposes health, metrics, and app info as HTTP endpoints. DevTools gives you hot reload in development.</p>
+
+  <div class="grid-2">
+    <div class="card spring">
+      <div class="card-label">Actuator Endpoints</div>
+      <pre style="font-size:11.5px;"><span class="cmt"># Add dependency:</span>
+<span class="cmt"># spring-boot-starter-actuator</span>
+
+<span class="cmt"># Enable all endpoints:</span>
+management.endpoints.web.exposure.include=*
+management.endpoint.health.show-details=always
+
+<span class="cmt"># Available endpoints:</span>
+GET /actuator/health    <span class="cmt"># UP/DOWN + DB/Redis status</span>
+GET /actuator/metrics   <span class="cmt"># JVM memory, HTTP requests</span>
+GET /actuator/info      <span class="cmt"># app version, git commit</span>
+GET /actuator/env       <span class="cmt"># all properties (careful!)</span>
+GET /actuator/beans     <span class="cmt"># all Spring beans</span>
+GET /actuator/mappings  <span class="cmt"># all @RequestMappings</span>
+POST /actuator/loggers  <span class="cmt"># change log level at runtime!</span>
+GET /actuator/httptrace <span class="cmt"># last 100 HTTP requests</span>
+
+<span class="cmt"># Integrates with:</span>
+<span class="cmt"># Prometheus (metrics scraping)</span>
+<span class="cmt"># Grafana (dashboards)</span>
+<span class="cmt"># Spring Boot Admin (UI)</span></pre>
+    </div>
+    <div class="card accent">
+      <div class="card-label">DevTools — Hot Reload</div>
+      <pre style="font-size:11.5px;"><span class="cmt"># Add to pom.xml (scope: runtime)</span>
+spring-boot-devtools
+
+<span class="cmt"># What it does in dev mode:</span>
+<span class="cmt"># - Auto-restart on .class change</span>
+<span class="cmt"># - LiveReload for templates</span>
+<span class="cmt"># - Disable caching (Thymeleaf, etc.)</span>
+<span class="cmt"># - Remote debugging support</span>
+
+<span class="cmt"># Auto-disabled in production</span>
+<span class="cmt"># (detects when running from fat jar)</span>
+
+<span class="cmt"># Spring Boot 3.2+: Docker Compose support</span>
+spring.docker.compose.enabled=true
+<span class="cmt"># Reads docker-compose.yml</span>
+<span class="cmt"># Starts Postgres, Redis, etc on app start</span>
+<span class="cmt"># Stops them on app shutdown</span>
+<span class="cmt"># Like docker-compose up in one Maven command</span></pre>
+    </div>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>/actuator/health</strong> = K8s readiness/liveness probe target. <strong>/actuator/metrics</strong> = Prometheus scrapes this. <strong>DevTools</strong> = hot reload for dev, auto-disabled in prod fat jar. <strong>Spring Boot Admin</strong> = UI dashboard aggregating multiple Actuator endpoints.
+  </div>
+</section>
+
+<!-- ===== SECTION 9: SPRING CLOUD ===== -->
+<section id="spring-cloud">
+  <div class="section-tag">Microservices</div>
+  <h1>Spring Cloud — The Microservices Toolkit</h1>
+  <p class="subtitle">When one Spring Boot app becomes many, Spring Cloud provides the glue: service discovery, config management, API gateway, circuit breakers, and distributed tracing.</p>
+
+  <div class="story-box">
+    <div class="story-label">🧠 Why Microservices Need Extra Infrastructure</div>
+    <p>Monolith: one app, one DB, one config file. Simple. Microservices: 20 apps, each with their own DB, each deployed independently, calling each other over HTTP. Now you need: how does Service A find Service B's address? How do you change config without redeploying 20 services? What if Service B is slow — does Service A crash too? Spring Cloud answers all of these.</p>
+  </div>
+
+  <h2>The Spring Cloud Components</h2>
+  <div class="microservice-grid">
+    <div class="ms-box">
+      <div class="ms-icon">🗂️</div>
+      <div class="ms-name">Config Server</div>
+      <div class="ms-tech">Centralized config for all services → Git repo</div>
+    </div>
+    <div class="ms-box">
+      <div class="ms-icon">📡</div>
+      <div class="ms-name">Eureka</div>
+      <div class="ms-tech">Service Registry — services register & discover each other</div>
+    </div>
+    <div class="ms-box">
+      <div class="ms-icon">🚪</div>
+      <div class="ms-name">API Gateway</div>
+      <div class="ms-tech">Single entry point — routing, auth, rate limiting</div>
+    </div>
+    <div class="ms-box">
+      <div class="ms-icon">⚡</div>
+      <div class="ms-name">OpenFeign</div>
+      <div class="ms-tech">Declarative HTTP client between services</div>
+    </div>
+    <div class="ms-box">
+      <div class="ms-icon">🔌</div>
+      <div class="ms-name">Circuit Breaker</div>
+      <div class="ms-tech">Resilience4j — fail fast, fallback, retry</div>
+    </div>
+    <div class="ms-box">
+      <div class="ms-icon">🔍</div>
+      <div class="ms-name">Sleuth/Zipkin</div>
+      <div class="ms-tech">Distributed tracing — trace requests across services</div>
+    </div>
+  </div>
+
+  <h2>Feign Client — HTTP Between Services</h2>
+  <div class="card spring">
+    <div class="card-label">OpenFeign — Like axios but declarative, no implementation needed</div>
+    <pre><span class="cmt">// Define the interface — Spring generates implementation</span>
+<span class="ann">@FeignClient</span>(name = <span class="str">"inventory-service"</span>)  <span class="cmt">// service name in Eureka</span>
+<span class="kw">public interface</span> <span class="type">InventoryClient</span> {
+
+  <span class="ann">@GetMapping</span>(<span class="str">"/api/inventory/{productId}"</span>)
+  InventoryResponse <span class="fn">checkStock</span>(<span class="ann">@PathVariable</span> String productId);
+
+  <span class="ann">@PostMapping</span>(<span class="str">"/api/inventory/deduct"</span>)
+  <span class="kw">void</span> <span class="fn">deductStock</span>(<span class="ann">@RequestBody</span> DeductRequest request);
+}
+
+<span class="cmt">// Use it like a regular service (Spring creates HTTP client):</span>
+<span class="ann">@Service</span>
+<span class="kw">public class</span> <span class="type">OrderService</span> {
+  <span class="kw">private final</span> InventoryClient inventoryClient;
+
+  <span class="kw">public</span> Order <span class="fn">createOrder</span>(CreateOrderRequest req) {
+    <span class="cmt">// This makes an HTTP call to inventory-service</span>
+    <span class="cmt">// Eureka resolves "inventory-service" to real IP:port</span>
+    InventoryResponse stock = inventoryClient.<span class="fn">checkStock</span>(req.<span class="fn">getProductId</span>());
+    <span class="kw">if</span> (!stock.<span class="fn">isAvailable</span>()) <span class="kw">throw new</span> OutOfStockException();
+    <span class="cmt">// ...</span>
+  }
+}</pre>
+  </div>
+
+  <h2>Circuit Breaker Pattern — Resilience4j</h2>
+  <div class="card red">
+    <div class="card-label">Circuit Breaker — Don't Let One Slow Service Kill Your App</div>
+    <pre><span class="cmt">// Without circuit breaker: inventory-service slow → 30s thread lock</span>
+<span class="cmt">// → all order threads waiting → order-service dies too</span>
+<span class="cmt">// The "cascading failure" problem</span>
+
+<span class="ann">@CircuitBreaker</span>(name = <span class="str">"inventory"</span>, fallbackMethod = <span class="str">"fallbackStock"</span>)
+<span class="ann">@Retry</span>(name = <span class="str">"inventory"</span>)
+<span class="ann">@TimeLimiter</span>(name = <span class="str">"inventory"</span>)  <span class="cmt">// timeout after 2s</span>
+<span class="kw">public</span> InventoryResponse <span class="fn">checkStock</span>(String productId) {
+  <span class="kw">return</span> inventoryClient.<span class="fn">checkStock</span>(productId);
+}
+
+<span class="cmt">// Fallback: what to do when circuit OPEN</span>
+<span class="kw">public</span> InventoryResponse <span class="fn">fallbackStock</span>(String productId, Exception ex) {
+  log.<span class="fn">warn</span>(<span class="str">"Inventory unavailable, using default"</span>);
+  <span class="kw">return</span> InventoryResponse.<span class="fn">builder</span>().<span class="fn">available</span>(<span class="kw">true</span>).<span class="fn">build</span>();
+  <span class="cmt">// Or: throw custom exception, or return cached value</span>
+}
+
+<span class="cmt">// Circuit states:</span>
+<span class="cmt">// CLOSED  → normal, requests flow through</span>
+<span class="cmt">// OPEN    → failing fast, fallback used (after X% failures)</span>
+<span class="cmt">// HALF-OPEN → test if service recovered (let some calls through)</span></pre>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>Eureka</strong> = phone book for services (register + discover). <strong>Config Server</strong> = one Git repo for all service configs. <strong>API Gateway</strong> = single entry, routes to services. <strong>Feign</strong> = write an interface, get HTTP client. <strong>Circuit Breaker</strong> = fail fast when downstream slow → fallback → prevent cascading. <strong>Distributed Tracing</strong> = one trace ID follows request through all services.
+  </div>
+</section>
+
+<!-- ===== SECTION 10: DOCKER ===== -->
+<section id="docker">
+  <div class="section-tag">Containerization</div>
+  <h1>Docker — Packaging Your App</h1>
+  <p class="subtitle">Docker solves "works on my machine." Your Spring Boot jar + its exact environment = one portable image. Runs identically on dev laptop, CI server, and AWS.</p>
+
+  <div class="story-box">
+    <div class="story-label">🧠 The Core Mental Model</div>
+    <p>A Docker <strong>image</strong> is like a recipe (read-only). A <strong>container</strong> is the running dish made from that recipe. You can make 100 dishes from the same recipe. The image includes your app AND its entire operating system layers — no "I need Java 21 installed on the server" problem. Everything is baked into the image.</p>
+  </div>
+
+  <h2>Dockerfile for Spring Boot</h2>
+  <div class="card docker">
+    <div class="card-label">Multi-Stage Build — Slim Production Image</div>
+    <pre><span class="cmt"># Stage 1: Build (uses full JDK, discarded after)</span>
+FROM eclipse-temurin:<span class="num">21</span>-jdk-alpine AS builder
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+
+<span class="cmt"># Download deps (cached layer — only re-runs if pom.xml changes)</span>
+RUN mvn dependency:go-offline -B
+
+<span class="cmt"># Build the fat jar</span>
+RUN mvn package -DskipTests
+
+<span class="cmt"># Stage 2: Runtime (uses slim JRE, ~200MB vs ~600MB)</span>
+FROM eclipse-temurin:<span class="num">21</span>-jre-alpine
+WORKDIR /app
+
+<span class="cmt"># Extract layered jar (faster restarts, better caching)</span>
+COPY --from=builder /app/target/*.jar app.jar
+
+<span class="cmt"># Spring Boot 3 layertools</span>
+RUN java -Djarmode=layertools -jar app.jar extract
+
+<span class="cmt"># Run the app</span>
+ENTRYPOINT [<span class="str">"java"</span>, <span class="str">"-jar"</span>, <span class="str">"app.jar"</span>]
+EXPOSE <span class="num">8080</span></pre>
+  </div>
+
+  <h2>Docker Compose — Local Development Stack</h2>
+  <div class="card">
+    <div class="card-label" style="color:var(--docker);">docker-compose.yml — Your Local Cloud</div>
+    <pre><span class="cmt"># docker-compose.yml</span>
+version: <span class="str">'3.8'</span>
+services:
+  app:
+    build: .
+    ports:
+      - <span class="str">"8080:8080"</span>
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_URL=jdbc:postgresql://postgres:5432/mydb
+      - REDIS_HOST=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:<span class="num">16</span>-alpine
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+    ports:
+      - <span class="str">"5432:5432"</span>
+    healthcheck:
+      test: [<span class="str">"CMD-SHELL"</span>, <span class="str">"pg_isready -U admin"</span>]
+      interval: 10s
+
+  redis:
+    image: redis:<span class="num">7</span>-alpine
+    ports:
+      - <span class="str">"6379:6379"</span>
+
+<span class="cmt"># Start everything: docker-compose up -d</span>
+<span class="cmt"># Stop everything: docker-compose down</span>
+<span class="cmt"># See logs:        docker-compose logs -f app</span></pre>
+  </div>
+
+  <div class="hooks-grid">
+    <div class="hook-card">
+      <div class="emoji">📦</div>
+      <div class="hook-title">Image vs Container</div>
+      <p>Image = cookie cutter (recipe, read-only). Container = actual cookie made from cutter (running instance). 1 image → unlimited containers. Kill a container → nothing lost, make a new one from same image.</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">🏗️</div>
+      <div class="hook-title">Layer Caching Hook</div>
+      <p>Dockerfile layers = pancake stack. Each instruction = one layer. If layer N changes, all layers below rebuild. Put rarely-changing things first (base OS, dependencies) and frequently-changing things last (your app code). mvn dependency:go-offline before COPY src = deps cached until pom.xml changes.</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">🌐</div>
+      <div class="hook-title">Networking Hook</div>
+      <p>Containers in docker-compose share a virtual network. "postgres:5432" works inside compose because the service name IS the hostname. Outside compose = localhost:5432. That's why DB_URL changes between dev and compose.</p>
+    </div>
+  </div>
+
+  <div class="reverse-box">
+    <div class="rev-label">🔄 What Breaks Without Understanding Docker</div>
+    <ul style="font-size:13.5px;">
+      <li><strong>Copying WHOLE project before mvn dependency:resolve</strong> → deps re-download on every code change → 5 min builds.</li>
+      <li><strong>Running as root in container</strong> → security risk, many registries reject it. Use USER 1001.</li>
+      <li><strong>Not setting -Xmx JVM flag</strong> → JVM detects container memory wrong in old Java → OOMKilled unexpectedly.</li>
+      <li><strong>Using latest tag in prod</strong> → unpredictable image pulls → different behavior after registry push. Always pin versions.</li>
+      <li><strong>No .dockerignore</strong> → COPY . . sends target/ (500MB of compiled classes) into image build context → slow builds.</li>
+    </ul>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>Image</strong> = recipe (read-only). <strong>Container</strong> = running instance. <strong>Multi-stage build</strong> = build with JDK, run with slim JRE. <strong>Layer caching</strong> = copy pom.xml before src, deps cached until pom changes. <strong>docker-compose</strong> = orchestrate local app + DB + Redis. <strong>.dockerignore</strong> = exclude target/, node_modules from build context.
+  </div>
+</section>
+
+<!-- ===== SECTION 11: KUBERNETES ===== -->
+<section id="kubernetes">
+  <div class="section-tag">Orchestration</div>
+  <h1>Kubernetes — Running Containers in Production</h1>
+  <p class="subtitle">Docker runs ONE container on ONE machine. Kubernetes runs MANY containers across MANY machines with auto-healing, scaling, rolling deploys, and service discovery.</p>
+
+  <div class="story-box">
+    <div class="story-label">🧠 The Mental Model</div>
+    <p>Docker Compose is a local dinner party you organize yourself. Kubernetes is a restaurant chain — you say "I want 5 replicas of my service, always healthy, restart if one dies, rollout new versions without downtime." K8s is the restaurant operations manager. You declare desired state. K8s continuously makes reality match your declaration.</p>
+  </div>
+
+  <h2>Core Kubernetes Objects for Spring Boot</h2>
+  <div class="grid-2">
+    <div class="card k8s">
+      <div class="card-label">Deployment — Running Your App</div>
+      <pre style="font-size:11.5px;"><span class="cmt"># deployment.yaml</span>
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: <span class="num">3</span>          <span class="cmt"># 3 pods (instances)</span>
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    spec:
+      containers:
+      - name: order-service
+        image: myregistry/order-service:<span class="num">1.2.3</span>
+        ports:
+        - containerPort: <span class="num">8080</span>
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: prod
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:        <span class="cmt"># from K8s Secret</span>
+              name: db-secret
+              key: password
+        resources:
+          requests: {cpu: <span class="str">"250m"</span>, memory: <span class="str">"512Mi"</span>}
+          limits:   {cpu: <span class="str">"1000m"</span>, memory: <span class="str">"1Gi"</span>}
+        livenessProbe:           <span class="cmt"># K8s calls this</span>
+          httpGet:
+            path: /actuator/health/liveness
+            port: <span class="num">8080</span>
+        readinessProbe:          <span class="cmt"># traffic only when ready</span>
+          httpGet:
+            path: /actuator/health/readiness
+            port: <span class="num">8080</span></pre>
+    </div>
+    <div class="card k8s">
+      <div class="card-label">Service & Ingress — Networking</div>
+      <pre style="font-size:11.5px;"><span class="cmt"># service.yaml — stable DNS + load balancer</span>
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  selector:
+    app: order-service     <span class="cmt"># targets pods with this label</span>
+  ports:
+  - port: <span class="num">80</span>
+    targetPort: <span class="num">8080</span>
+  type: ClusterIP          <span class="cmt"># internal only</span>
+
+<span class="cmt"># Other services call: http://order-service/api/orders</span>
+<span class="cmt"># K8s DNS resolves "order-service" to pod IPs</span>
+<span class="cmt"># Load balances automatically across 3 pods</span>
+
+---
+<span class="cmt"># ingress.yaml — external traffic routing</span>
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-ingress
+spec:
+  rules:
+  - host: api.myapp.com
+    http:
+      paths:
+      - path: /orders
+        backend:
+          service: {name: order-service, port: {number: <span class="num">80</span>}}
+      - path: /users
+        backend:
+          service: {name: user-service, port: {number: <span class="num">80</span>}}</pre>
+    </div>
+  </div>
+
+  <h2>ConfigMap & Secrets — K8s Config Management</h2>
+  <div class="card amber">
+    <div class="card-label">ConfigMap = application.properties, Secret = encrypted values</div>
+    <pre><span class="cmt"># configmap.yaml</span>
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-service-config
+data:
+  SPRING_PROFILES_ACTIVE: prod
+  LOG_LEVEL: INFO
+  DB_HOST: postgres-service
+
+<span class="cmt"># secret.yaml (values are base64 encoded)</span>
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+type: Opaque
+data:
+  password: cGFzc3dvcmQxMjM=  <span class="cmt"># echo -n 'password123' | base64</span>
+  jwt-secret: bXlzZWNyZXRrZXk= <span class="cmt"># Use External Secrets Operator in prod</span>
+
+<span class="cmt"># Commands:</span>
+kubectl apply -f deployment.yaml          <span class="cmt"># deploy</span>
+kubectl get pods                          <span class="cmt"># list pods</span>
+kubectl logs order-service-abc123 -f      <span class="cmt"># tail logs</span>
+kubectl exec -it order-service-abc123 sh  <span class="cmt"># shell in pod</span>
+kubectl rollout undo deployment/order-service  <span class="cmt"># rollback</span>
+kubectl scale deployment/order-service --replicas=5  <span class="cmt"># scale</span></pre>
+  </div>
+
+  <div class="hooks-grid">
+    <div class="hook-card">
+      <div class="emoji">🏥</div>
+      <div class="hook-title">Self-Healing Hook</div>
+      <p>K8s = hospital with automatic ICU. Pod (patient) dies → K8s immediately starts new one (replacement) to maintain "3 replicas desired." Liveness probe = "are you alive?" Readiness probe = "are you ready for patients?" Only ready pods get traffic.</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">🔄</div>
+      <div class="hook-title">Rolling Deploy Hook</div>
+      <p>Rolling deploy = replacing bus wheels while moving. K8s starts new pod → waits for ready → kills one old pod → repeats. At no point = zero pods. Zero downtime deploys by default. Rollback = undo last commit (kubernetes keeps history).</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">📋</div>
+      <div class="hook-title">Desired State Hook</div>
+      <p>K8s = thermostat. You set "temperature: 3 replicas." K8s checks every few seconds — if reality ≠ desired, it fixes it. Pod crashes = below desired → K8s starts new one. Node dies = pods move to other nodes. You declare WHAT, K8s figures out HOW.</p>
+    </div>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>Pod</strong> = smallest unit, wraps 1+ containers. <strong>Deployment</strong> = manage N replicas of a pod template. <strong>Service</strong> = stable DNS + load balancer for pods. <strong>Ingress</strong> = route external HTTP to services. <strong>ConfigMap</strong> = non-secret config. <strong>Secret</strong> = encrypted config (passwords, keys). <strong>Liveness probe → /actuator/health/liveness. Readiness probe → /actuator/health/readiness.</strong>
+  </div>
+</section>
+
+<!-- ===== SECTION 12: AWS ===== -->
+<section id="aws">
+  <div class="section-tag">Cloud Provider</div>
+  <h1>AWS — The Cloud Ecosystem</h1>
+  <p class="subtitle">AWS is the world's largest cloud. Spring Boot apps deploy here using multiple services. Know these 12 services and you can build anything.</p>
+
+  <div class="card amber">
+    <div class="card-label">Core AWS Services for Spring Boot Apps</div>
+    <table class="comp-table" style="margin:0;">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>What it is</th>
+          <th>Spring Boot Use Case</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>EC2</td><td>Virtual machines</td><td>Run Spring Boot directly (old way)</td></tr>
+        <tr><td>ECS / Fargate</td><td>Docker container runner</td><td>Run Docker containers, no server management</td></tr>
+        <tr><td>EKS</td><td>Managed Kubernetes</td><td>K8s cluster without managing master nodes</td></tr>
+        <tr><td>RDS</td><td>Managed databases</td><td>PostgreSQL/MySQL for spring.datasource</td></tr>
+        <tr><td>ElastiCache</td><td>Managed Redis/Memcached</td><td>@Cacheable, session storage</td></tr>
+        <tr><td>S3</td><td>Object storage</td><td>File uploads, static assets, logs</td></tr>
+        <tr><td>SQS</td><td>Message queue</td><td>Async processing, service decoupling</td></tr>
+        <tr><td>SNS</td><td>Pub/Sub notifications</td><td>Push notifications, email, fan-out</td></tr>
+        <tr><td>ALB</td><td>Application Load Balancer</td><td>Route HTTP to ECS/EKS services</td></tr>
+        <tr><td>Secrets Manager</td><td>Encrypted secrets store</td><td>DB passwords, API keys (replace K8s secrets)</td></tr>
+        <tr><td>CloudWatch</td><td>Logs, metrics, alarms</td><td>Actuator metrics → CloudWatch → Grafana</td></tr>
+        <tr><td>IAM</td><td>Identity & permissions</td><td>Service-to-service auth, EC2/ECS roles</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>The Typical Spring Boot Deployment on AWS</h2>
+  <div class="pipeline" style="flex-wrap:wrap;gap:6px;">
+    <div class="pipe-step"><div class="icon">👨‍💻</div><div class="name">Dev pushes</div><div class="desc">git push</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🔧</div><div class="name">GitHub Actions</div><div class="desc">mvn test + build</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🐳</div><div class="name">Docker build</div><div class="desc">Create image</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">📦</div><div class="name">ECR push</div><div class="desc">AWS image registry</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">☁️</div><div class="name">ECS deploy</div><div class="desc">Rolling update</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">⚖️</div><div class="name">ALB routes</div><div class="desc">Traffic to tasks</div></div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step"><div class="icon">🗄️</div><div class="name">RDS + Redis</div><div class="desc">Managed DB</div></div>
+  </div>
+
+  <div class="card spring">
+    <div class="card-label">Spring Cloud AWS — Native Integration</div>
+    <pre><span class="cmt">&lt;!-- spring-cloud-aws-starter --&gt;</span>
+
+<span class="cmt">// S3 file upload</span>
+<span class="ann">@Autowired</span>
+<span class="kw">private</span> S3Client s3Client;
+
+s3Client.<span class="fn">putObject</span>(
+  PutObjectRequest.<span class="fn">builder</span>()
+    .<span class="fn">bucket</span>(<span class="str">"my-bucket"</span>)
+    .<span class="fn">key</span>(<span class="str">"uploads/file.pdf"</span>)
+    .<span class="fn">build</span>(),
+  RequestBody.<span class="fn">fromBytes</span>(fileBytes)
+);
+
+<span class="cmt">// SQS message listener</span>
+<span class="ann">@SqsListener</span>(<span class="str">"order-events-queue"</span>)
+<span class="kw">public void</span> <span class="fn">processOrderEvent</span>(OrderEvent event) {
+  orderService.<span class="fn">process</span>(event);
+  <span class="cmt">// Message auto-deleted on success</span>
+  <span class="cmt">// Retried on exception (visibility timeout)</span>
+}
+
+<span class="cmt">// Secrets Manager — fetch at startup</span>
+<span class="cmt"># application.yml</span>
+<span class="cmt"># spring.config.import: aws-secretsmanager:/myapp/prod/secrets</span>
+<span class="cmt"># Fetches from AWS Secrets Manager at boot time</span>
+<span class="cmt"># Values injected as regular @Value properties</span></pre>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>ECS/Fargate</strong> = run Docker without managing servers. <strong>EKS</strong> = managed K8s. <strong>RDS</strong> = your spring.datasource DB. <strong>ElastiCache</strong> = your @Cacheable Redis. <strong>SQS</strong> = async message queue for decoupled services. <strong>Secrets Manager</strong> = encrypted secrets for prod. <strong>CloudWatch</strong> = logs + metrics + alarms. <strong>IAM</strong> = who can do what to which AWS resources.
+  </div>
+</section>
+
+<!-- ===== SECTION 13: CI/CD ===== -->
+<section id="cicd">
+  <div class="section-tag">DevOps</div>
+  <h1>CI/CD Pipelines — Code to Production</h1>
+  <p class="subtitle">CI/CD is the automation between git push and running production. Every enterprise Spring Boot team has this pipeline.</p>
+
+  <div class="card">
+    <div class="card-label" style="color:var(--accent2);">GitHub Actions — Spring Boot CI/CD Pipeline</div>
+    <pre><span class="cmt"># .github/workflows/ci-cd.yml</span>
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:<span class="num">16</span>
+        env: {POSTGRES_PASSWORD: testpass}
+        options: --health-cmd pg_isready
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {java-version: <span class="str">'21'</span>, distribution: <span class="str">'temurin'</span>}
+      - name: Cache Maven deps
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+      - name: Run Tests
+        run: mvn test -B
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
+
+  build-and-push:
+    needs: test
+    if: github.ref == <span class="str">'refs/heads/main'</span>
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t ${{ vars.ECR_REGISTRY }}/myapp:${{ github.sha }} .
+      - name: Push to ECR
+        run: |
+          aws ecr get-login-password | docker login --username AWS ...
+          docker push ${{ vars.ECR_REGISTRY }}/myapp:${{ github.sha }}
+      - name: Deploy to ECS
+        run: aws ecs update-service --cluster prod --service myapp --force-new-deployment</pre>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>CI</strong> = automatically test every push. <strong>CD</strong> = automatically deploy when tests pass. <strong>Cache ~/.m2</strong> = avoid re-downloading deps on every CI run. <strong>PR → CI only. Main push → CI + CD.</strong> Use <span class="inline-code">mvn -B</span> (batch mode) in CI to suppress interactive prompts. Run integration tests with real DB via docker service in GitHub Actions.
+  </div>
+</section>
+
+<!-- ===== SECTION 14: PYTHON ECO ===== -->
+<section id="python-eco">
+  <div class="section-tag">Python Ecosystem</div>
+  <h1>pip, venv & Poetry — Python's Package Management</h1>
+  <p class="subtitle">Python's package ecosystem mirrors Java's Maven but with some important differences around virtual environments and dependency hell.</p>
+
+  <div class="story-box">
+    <div class="story-label">🧠 The Critical Difference From Java</div>
+    <p>Java's Maven installs packages globally in <span class="inline-code">~/.m2</span> and they don't conflict between projects (different groupId paths). Python installs globally by default — Project A needs Django 3.2 and Project B needs Django 4.2? <strong>They clash</strong>. That's why virtual environments are non-negotiable in Python. Every project gets its own isolated Python installation.</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-label" style="color:var(--python);">venv — Virtual Environments</div>
+      <pre><span class="cmt"># Create isolated Python environment</span>
+python -m venv venv        <span class="cmt"># creates venv/ folder</span>
+source venv/bin/activate   <span class="cmt"># Linux/Mac</span>
+venv\Scripts\activate      <span class="cmt"># Windows</span>
+
+<span class="cmt"># Now pip installs ONLY in this venv</span>
+pip install django         <span class="cmt"># isolated to this project</span>
+pip install djangorestframework
+
+<span class="cmt"># Freeze dependencies</span>
+pip freeze > requirements.txt
+
+<span class="cmt"># Someone else sets up:</span>
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+<span class="cmt"># ALWAYS add to .gitignore:</span>
+venv/
+__pycache__/
+*.pyc
+.env</pre>
+    </div>
+    <div class="card django">
+      <div class="card-label">Poetry — Modern Python (like Maven + venv combined)</div>
+      <pre><span class="cmt"># pyproject.toml = pom.xml for Python</span>
+[tool.poetry]
+name = <span class="str">"my-django-app"</span>
+version = <span class="str">"0.1.0"</span>
+
+[tool.poetry.dependencies]
+python = <span class="str">"^3.12"</span>
+django = <span class="str">"^5.0"</span>
+djangorestframework = <span class="str">"^3.14"</span>
+psycopg2-binary = <span class="str">"^2.9"</span>
+
+[tool.poetry.dev-dependencies]
+pytest = <span class="str">"^7.0"</span>
+pytest-django = <span class="str">"^4.5"</span>
+
+<span class="cmt"># Commands:</span>
+poetry install    <span class="cmt"># = mvn install (creates venv + installs)</span>
+poetry add django <span class="cmt"># = npm install django</span>
+poetry run python manage.py runserver
+poetry shell      <span class="cmt"># activate venv</span>
+<span class="cmt"># poetry.lock = exact versions (like package-lock.json)</span></pre>
+    </div>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>venv</strong> = mandatory isolation (each project gets own Python). <strong>pip</strong> = npm for Python, installs from PyPI. <strong>requirements.txt</strong> = package.json equivalent (no lock by default). <strong>Poetry</strong> = modern tool: pyproject.toml + poetry.lock + venv management in one. <strong>PyPI</strong> = npmjs.org for Python. <strong>Never install packages globally</strong> — always in a venv.
+  </div>
+</section>
+
+<!-- ===== SECTION 15: DJANGO ===== -->
+<section id="django">
+  <div class="section-tag">Python Framework</div>
+  <h1>Django — Batteries Included Web Framework</h1>
+  <p class="subtitle">Django is Python's Spring Boot equivalent — opinionated, full-featured, includes ORM, admin UI, auth, forms, and security out of the box.</p>
+
+  <h2>Django Project Structure</h2>
+  <div class="card django">
+    <div class="card-label">Django Folder Structure → Mapped to Spring Boot</div>
+    <pre><span class="cmt"># Django project structure</span>
+myproject/
+├── manage.py           <span class="cmt"># = spring-boot:run entry point</span>
+├── myproject/
+│   ├── settings.py     <span class="cmt"># = application.properties</span>
+│   ├── urls.py         <span class="cmt"># = root router (maps to app urls)</span>
+│   └── wsgi.py         <span class="cmt"># = embedded server config</span>
+├── orders/             <span class="cmt"># = a "module" like in Spring</span>
+│   ├── models.py       <span class="cmt"># = @Entity classes</span>
+│   ├── views.py        <span class="cmt"># = @RestController</span>
+│   ├── urls.py         <span class="cmt"># = @RequestMapping paths</span>
+│   ├── serializers.py  <span class="cmt"># = DTOs / Jackson mapping</span>
+│   ├── admin.py        <span class="cmt"># = free admin UI (Spring has no equivalent)</span>
+│   ├── tests.py        <span class="cmt"># = JUnit test classes</span>
+│   └── migrations/     <span class="cmt"># = Flyway/Liquibase DB migrations</span>
+└── requirements.txt    <span class="cmt"># = pom.xml</span>
+
+<span class="cmt"># Start project:</span>
+django-admin startproject myproject
+python manage.py startapp orders
+
+<span class="cmt"># Run migrations (create DB tables from models):</span>
+python manage.py makemigrations  <span class="cmt"># detect model changes</span>
+python manage.py migrate         <span class="cmt"># apply to DB</span>
+
+<span class="cmt"># Run server:</span>
+python manage.py runserver</pre>
+  </div>
+
+  <h2>Django MVT Pattern — Models, Views, Templates</h2>
+  <div class="card">
+    <div class="card-label" style="color:var(--django-accent);">Model → Migration → View → URL</div>
+    <pre><span class="cmt"># models.py — Django ORM (like @Entity)</span>
+<span class="kw">from</span> django.db <span class="kw">import</span> models
+
+<span class="kw">class</span> <span class="type">Order</span>(models.Model):
+    customer_id = models.<span class="fn">CharField</span>(max_length=<span class="num">100</span>)
+    status = models.<span class="fn">CharField</span>(
+        max_length=<span class="num">20</span>,
+        choices=[(s, s) <span class="kw">for</span> s <span class="kw">in</span> [<span class="str">'PENDING'</span>, <span class="str">'PAID'</span>, <span class="str">'SHIPPED'</span>]],
+        default=<span class="str">'PENDING'</span>
+    )
+    total_amount = models.<span class="fn">DecimalField</span>(max_digits=<span class="num">10</span>, decimal_places=<span class="num">2</span>)
+    created_at = models.<span class="fn">DateTimeField</span>(auto_now_add=<span class="kw">True</span>)
+
+    <span class="kw">class</span> Meta:
+        ordering = [<span class="str">'-created_at'</span>]      <span class="cmt"># default sort</span>
+        db_table = <span class="str">'orders'</span>            <span class="cmt"># table name</span>
+
+<span class="cmt"># Django ORM queries — like JPA Repository methods</span>
+Order.<span class="fn">objects</span>.<span class="fn">all</span>()                         <span class="cmt"># findAll()</span>
+Order.<span class="fn">objects</span>.<span class="fn">get</span>(id=<span class="num">42</span>)                   <span class="cmt"># findById(42)</span>
+Order.<span class="fn">objects</span>.<span class="fn">filter</span>(status=<span class="str">'PENDING'</span>)     <span class="cmt"># findByStatus</span>
+Order.<span class="fn">objects</span>.<span class="fn">create</span>(customer_id=<span class="str">'c1'</span>, ...) <span class="cmt"># save(new)</span>
+Order.<span class="fn">objects</span>.<span class="fn">filter</span>(status=<span class="str">'PAID'</span>).<span class="fn">update</span>(status=<span class="str">'SHIPPED'</span>)</pre>
+  </div>
+
+  <h2>Django settings.py — The application.properties</h2>
+  <div class="card">
+    <div class="card-label" style="color:var(--django-accent);">settings.py with python-decouple (like Spring profiles)</div>
+    <pre><span class="cmt"># settings.py</span>
+<span class="kw">from</span> decouple <span class="kw">import</span> config
+<span class="kw">import</span> dj_database_url
+
+SECRET_KEY = <span class="fn">config</span>(<span class="str">'SECRET_KEY'</span>)         <span class="cmt"># from .env file</span>
+DEBUG = <span class="fn">config</span>(<span class="str">'DEBUG'</span>, default=<span class="kw">False</span>, cast=bool)
+
+DATABASES = {
+    <span class="str">'default'</span>: dj_database_url.<span class="fn">config</span>(
+        default=<span class="fn">config</span>(<span class="str">'DATABASE_URL'</span>),
+        conn_max_age=<span class="num">600</span>
+    )
+}
+
+INSTALLED_APPS = [
+    <span class="str">'django.contrib.admin'</span>,      <span class="cmt"># free admin UI</span>
+    <span class="str">'django.contrib.auth'</span>,       <span class="cmt"># auth system (like Spring Security)</span>
+    <span class="str">'rest_framework'</span>,            <span class="cmt"># DRF</span>
+    <span class="str">'corsheaders'</span>,               <span class="cmt"># CORS headers</span>
+    <span class="str">'orders'</span>,                    <span class="cmt"># your app</span>
+]
+
+CACHES = {
+    <span class="str">'default'</span>: {
+        <span class="str">'BACKEND'</span>: <span class="str">'django_redis.cache.RedisCache'</span>,
+        <span class="str">'LOCATION'</span>: <span class="fn">config</span>(<span class="str">'REDIS_URL'</span>, default=<span class="str">'redis://localhost:6379/0'</span>),
+    }
+}</pre>
+  </div>
+
+  <div class="hooks-grid">
+    <div class="hook-card">
+      <div class="emoji">🔋</div>
+      <div class="hook-title">Batteries Included Hook</div>
+      <p>Django = fully loaded military backpack. Admin UI, auth, ORM, migrations, sessions, CSRF, forms — all pre-installed. Spring Boot is a modular toolkit — add starters for each feature. Django's way is "everything now." Spring's way is "add what you need."</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">🧩</div>
+      <div class="hook-title">Apps Hook</div>
+      <p>Django "apps" = Spring Boot modules/packages. Each app is a self-contained unit: models + views + urls. You can reuse apps across projects. INSTALLED_APPS = "activate this module." startapp = creates the module skeleton. Like a Spring @Component package.</p>
+    </div>
+    <div class="hook-card">
+      <div class="emoji">🗃️</div>
+      <div class="hook-title">Migrations Hook</div>
+      <p>Django migrations = Flyway for Spring. makemigrations = detect model change → write migration file. migrate = apply SQL to DB. Migration files go in git. Teammates run migrate after pulling. Django handles column adds, renames, drops automatically. Spring needs explicit Flyway SQL scripts.</p>
+    </div>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>models.py</strong> = @Entity. <strong>views.py</strong> = @RestController. <strong>urls.py</strong> = @RequestMapping. <strong>settings.py</strong> = application.properties. <strong>migrations/</strong> = Flyway scripts (auto-generated). <strong>manage.py</strong> = CLI tool (makemigrations, migrate, runserver, shell). <strong>INSTALLED_APPS</strong> = register your app modules. <strong>Django Admin</strong> = free CRUD UI from models.
+  </div>
+</section>
+
+<!-- ===== SECTION 16: DRF ===== -->
+<section id="drf">
+  <div class="section-tag">Python REST</div>
+  <h1>Django REST Framework — Spring MVC for Python</h1>
+  <p class="subtitle">DRF adds REST API capabilities to Django. Serializers handle JSON conversion, ViewSets give you CRUD for free.</p>
+
+  <div class="code-compare">
+    <div>
+      <span class="code-side-label spring-label">Spring Boot (Java)</span>
+      <pre style="margin-top:0;border-radius:0 8px 8px 8px;"><span class="ann">@RestController</span>
+<span class="ann">@RequestMapping</span>(<span class="str">"/api/orders"</span>)
+<span class="kw">public class</span> <span class="type">OrderController</span> {
+
+  <span class="ann">@GetMapping</span>
+  <span class="kw">public</span> Page&lt;OrderDTO&gt; <span class="fn">list</span>(Pageable p) {
+    <span class="kw">return</span> orderService.<span class="fn">findAll</span>(p);
+  }
+
+  <span class="ann">@PostMapping</span>
+  <span class="ann">@ResponseStatus</span>(CREATED)
+  <span class="kw">public</span> OrderDTO <span class="fn">create</span>(
+    <span class="ann">@RequestBody</span> <span class="ann">@Valid</span> CreateOrderReq req) {
+    <span class="kw">return</span> orderService.<span class="fn">create</span>(req);
+  }
+
+  <span class="ann">@GetMapping</span>(<span class="str">"/{id}"</span>)
+  <span class="kw">public</span> OrderDTO <span class="fn">get</span>(<span class="ann">@PathVariable</span> Long id) {
+    <span class="kw">return</span> orderService.<span class="fn">findById</span>(id);
+  }
+}</pre>
+    </div>
+    <div>
+      <span class="code-side-label django-label">Django REST Framework (Python)</span>
+      <pre style="margin-top:0;border-radius:0 8px 8px 8px;"><span class="cmt"># serializers.py — like DTOs + Jackson</span>
+<span class="kw">class</span> <span class="type">OrderSerializer</span>(serializers.ModelSerializer):
+    <span class="kw">class</span> Meta:
+        model = Order
+        fields = [<span class="str">'id'</span>, <span class="str">'customer_id'</span>, <span class="str">'status'</span>, <span class="str">'total_amount'</span>]
+        read_only_fields = [<span class="str">'id'</span>, <span class="str">'created_at'</span>]
+
+<span class="cmt"># views.py — ModelViewSet = full CRUD for free</span>
+<span class="kw">class</span> <span class="type">OrderViewSet</span>(viewsets.ModelViewSet):
+    queryset = Order.objects.<span class="fn">all</span>()
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = [<span class="str">'status'</span>, <span class="str">'customer_id'</span>]
+
+<span class="cmt"># urls.py — router generates all routes</span>
+router = DefaultRouter()
+router.<span class="fn">register</span>(<span class="str">'orders'</span>, OrderViewSet)
+<span class="cmt"># → GET/POST /api/orders/</span>
+<span class="cmt"># → GET/PUT/DELETE /api/orders/{id}/</span></pre>
+    </div>
+  </div>
+
+  <div class="card django">
+    <div class="card-label">Authentication in DRF — JWT (like Spring Security + JWT)</div>
+    <pre><span class="cmt"># settings.py — JWT auth via djangorestframework-simplejwt</span>
+REST_FRAMEWORK = {
+    <span class="str">'DEFAULT_AUTHENTICATION_CLASSES'</span>: [
+        <span class="str">'rest_framework_simplejwt.authentication.JWTAuthentication'</span>,
+    ],
+    <span class="str">'DEFAULT_PERMISSION_CLASSES'</span>: [
+        <span class="str">'rest_framework.permissions.IsAuthenticated'</span>,  <span class="cmt"># global default</span>
+    ],
+    <span class="str">'DEFAULT_PAGINATION_CLASS'</span>: <span class="str">'rest_framework.pagination.PageNumberPagination'</span>,
+    <span class="str">'PAGE_SIZE'</span>: <span class="num">20</span>,
+    <span class="str">'DEFAULT_FILTER_BACKENDS'</span>: [<span class="str">'django_filters.rest_framework.DjangoFilterBackend'</span>],
+}
+
+<span class="cmt"># urls.py — add JWT endpoints</span>
+<span class="kw">from</span> rest_framework_simplejwt.views <span class="kw">import</span> TokenObtainPairView, TokenRefreshView
+
+urlpatterns = [
+    path(<span class="str">'api/auth/token/'</span>, TokenObtainPairView.as_view()),   <span class="cmt"># login → JWT</span>
+    path(<span class="str">'api/auth/refresh/'</span>, TokenRefreshView.as_view()),   <span class="cmt"># refresh token</span>
+    path(<span class="str">'api/'</span>, include(router.urls)),
+]</pre>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>Serializer</strong> = DTO + Jackson mapper (model → JSON and back). <strong>ModelSerializer</strong> = auto-generates fields from model. <strong>ModelViewSet</strong> = full CRUD controller in 3 lines. <strong>Router</strong> = auto-generates URLs from ViewSet. <strong>permission_classes</strong> = @PreAuthorize equivalent. <strong>DEFAULT_AUTHENTICATION_CLASSES</strong> = JwtAuthenticationFilter equivalent in DRF.
+  </div>
+</section>
+
+<!-- ===== SECTION 17: CELERY ===== -->
+<section id="celery">
+  <div class="section-tag">Async Python</div>
+  <h1>Celery — Async Task Queue for Django</h1>
+  <p class="subtitle">Celery is Python's equivalent of Spring @Async + RabbitMQ/SQS. Long-running tasks (email, PDF generation, API calls) move off the request thread.</p>
+
+  <div class="card django">
+    <div class="card-label">Celery Setup with Django + Redis</div>
+    <pre><span class="cmt"># celery.py — in myproject/</span>
+<span class="kw">from</span> celery <span class="kw">import</span> Celery
+
+app = Celery(<span class="str">'myproject'</span>)
+app.<span class="fn">config_from_object</span>(<span class="str">'django.conf:settings'</span>, namespace=<span class="str">'CELERY'</span>)
+app.<span class="fn">autodiscover_tasks</span>()  <span class="cmt"># finds tasks.py in all Django apps</span>
+
+<span class="cmt"># settings.py</span>
+CELERY_BROKER_URL = <span class="str">'redis://localhost:6379/0'</span>   <span class="cmt"># SQS alternative</span>
+CELERY_RESULT_BACKEND = <span class="str">'redis://localhost:6379/0'</span>
+
+<span class="cmt"># tasks.py in orders app</span>
+<span class="kw">from</span> celery <span class="kw">import</span> shared_task
+
+<span class="ann">@shared_task</span>(bind=<span class="kw">True</span>, max_retries=<span class="num">3</span>)
+<span class="kw">def</span> <span class="fn">send_order_confirmation</span>(self, order_id):
+    <span class="kw">try</span>:
+        order = Order.objects.<span class="fn">get</span>(id=order_id)
+        email_service.<span class="fn">send_confirmation</span>(order)
+    <span class="kw">except</span> Exception <span class="kw">as</span> exc:
+        <span class="kw">raise</span> self.<span class="fn">retry</span>(exc=exc, countdown=<span class="num">60</span>)  <span class="cmt"># retry after 60s</span>
+
+<span class="cmt"># In view — dispatch task (returns immediately)</span>
+<span class="kw">def</span> <span class="fn">create_order</span>(request):
+    order = Order.objects.<span class="fn">create</span>(...)
+    send_order_confirmation.<span class="fn">delay</span>(order.id)  <span class="cmt"># async!</span>
+    <span class="kw">return</span> JsonResponse({<span class="str">'id'</span>: order.id}, status=<span class="num">201</span>)
+    <span class="cmt"># Email sent in background, response returns immediately</span>
+
+<span class="cmt"># Start Celery worker:</span>
+celery -A myproject worker --loglevel=info
+<span class="cmt"># Start scheduler (cron jobs):</span>
+celery -A myproject beat --loglevel=info</pre>
+  </div>
+
+  <div class="recall-box">
+    <div class="recall-label">⚡ Recall Trigger</div>
+    <strong>@shared_task</strong> = Spring @Async. <strong>.delay()</strong> = submit task to queue (non-blocking). <strong>Redis/RabbitMQ</strong> = broker (holds task queue). <strong>Worker process</strong> = separate process that pulls and runs tasks. <strong>Beat</strong> = cron scheduler (periodic tasks). <strong>Retry with countdown</strong> = Spring Retry equivalent.
+  </div>
+</section>
+
+<!-- ===== SECTION 18: COMPARISON ===== -->
+<section id="js-vs-java">
+  <div class="section-tag">Comparisons</div>
+  <h1>JS/Frontend vs Java Backend — Full Ecosystem Map</h1>
+  <p class="subtitle">Your Angular/React knowledge maps directly. Use this table every time you encounter a new Spring Boot concept.</p>
+
+  <div class="card accent">
+    <div class="card-label">Complete Ecosystem Mapping</div>
+    <table class="comp-table" style="margin:0;">
+      <thead>
+        <tr>
+          <th>Concern</th>
+          <th>JavaScript / Frontend</th>
+          <th class="spring-col">Java / Spring Boot</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Runtime</td><td>V8 engine / Node.js</td><td>JVM (HotSpot / GraalVM)</td></tr>
+        <tr><td>Type system</td><td>TypeScript interfaces</td><td>Java classes/generics (stricter)</td></tr>
+        <tr><td>Null safety</td><td>?. optional chaining</td><td>Optional<T>, @NonNull, Java 21 records</td></tr>
+        <tr><td>Package manager</td><td>npm / yarn / pnpm</td><td>Maven / Gradle</td></tr>
+        <tr><td>Package registry</td><td>npmjs.org</td><td>Maven Central / Nexus</td></tr>
+        <tr><td>Config file</td><td>package.json</td><td>pom.xml / build.gradle</td></tr>
+        <tr><td>Lock file</td><td>package-lock.json</td><td>pom.xml (exact) / gradle.lockfile</td></tr>
+        <tr><td>Dep cache</td><td>node_modules/</td><td>~/.m2/ (global, shared)</td></tr>
+        <tr><td>Build output</td><td>dist/ (bundle)</td><td>target/*.jar (fat jar)</td></tr>
+        <tr><td>Build steps</td><td>npm run build</td><td>mvn package</td></tr>
+        <tr><td>Dev server</td><td>ng serve / vite dev</td><td>mvn spring-boot:run</td></tr>
+        <tr><td>Hot reload</td><td>HMR (Webpack)</td><td>spring-boot-devtools</td></tr>
+        <tr><td>Framework</td><td>Angular / React</td><td>Spring Boot</td></tr>
+        <tr><td>DI container</td><td>Angular DI</td><td>Spring IoC Container</td></tr>
+        <tr><td>HTTP routing</td><td>Angular Router / React Router</td><td>Spring MVC @RequestMapping</td></tr>
+        <tr><td>HTTP client</td><td>HttpClient / axios / fetch</td><td>RestTemplate / WebClient / Feign</td></tr>
+        <tr><td>Middleware</td><td>Angular interceptors / Express middleware</td><td>Spring Filters / Interceptors</td></tr>
+        <tr><td>ORM</td><td>TypeORM / Prisma</td><td>Spring Data JPA / Hibernate</td></tr>
+        <tr><td>Auth</td><td>Angular guards / JWT</td><td>Spring Security Filter Chain + JWT</td></tr>
+        <tr><td>Env config</td><td>.env / environment.ts</td><td>application.yml + Spring profiles</td></tr>
+        <tr><td>Testing</td><td>Jest / Karma / Cypress</td><td>JUnit 5 / Mockito / TestContainers</td></tr>
+        <tr><td>Linting</td><td>ESLint / Prettier</td><td>Checkstyle / SpotBugs / SonarQube</td></tr>
+        <tr><td>Containerize</td><td>Dockerfile + docker-compose</td><td>Dockerfile + docker-compose</td></tr>
+        <tr><td>Deploy target</td><td>Nginx / Vercel / Netlify</td><td>ECS / EKS / Kubernetes</td></tr>
+        <tr><td>Monitoring</td><td>DataDog RUM / Sentry</td><td>Spring Actuator + Prometheus + Grafana</td></tr>
+        <tr><td>Logging</td><td>console.log / Winston</td><td>SLF4J + Logback / Log4j2</td></tr>
+        <tr><td>Async</td><td>async/await / Promises / RxJS</td><td>@Async / CompletableFuture / WebFlux</td></tr>
+        <tr><td>Message queue</td><td>BullMQ / Redis</td><td>RabbitMQ / Kafka / AWS SQS</td></tr>
+        <tr><td>Caching</td><td>Redis / LocalStorage</td><td>@Cacheable + Redis / Ehcache</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="spring-vs-django">
+  <div class="section-tag">Framework Comparison</div>
+  <h1>Spring Boot vs Django — When to Use Which</h1>
+  <p class="subtitle">Both are production-proven. Choose based on team, performance needs, and ecosystem fit.</p>
+
+  <div class="card">
+    <div class="card-label" style="color:var(--accent3);">Spring Boot vs Django — Feature by Feature</div>
+    <table class="comp-table" style="margin:0;">
+      <thead>
+        <tr>
+          <th>Aspect</th>
+          <th class="spring-col">Spring Boot</th>
+          <th class="django-col">Django</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Language</td><td>Java (statically typed)</td><td>Python (dynamically typed)</td></tr>
+        <tr><td>Performance</td><td>🚀 Very high (JVM JIT)</td><td>⚡ Good (CPython, slower than JVM)</td></tr>
+        <tr><td>Startup time</td><td>Slow (2-30s) → GraalVM native fixes</td><td>Fast (< 1s)</td></tr>
+        <tr><td>Concurrency</td><td>Thread-per-request / Virtual Threads (Java 21) / WebFlux</td><td>WSGI (sync) / ASGI (async w/ Django 4)</td></tr>
+        <tr><td>ORM</td><td>Hibernate JPA (powerful, complex)</td><td>Django ORM (simpler, magic-y)</td></tr>
+        <tr><td>Admin UI</td><td>❌ None built-in</td><td>✅ Auto-generated from models</td></tr>
+        <tr><td>Migrations</td><td>Flyway/Liquibase (manual SQL)</td><td>Auto-generated from models</td></tr>
+        <tr><td>Microservices</td><td>✅ Spring Cloud ecosystem</td><td>⚠️ Possible, less native tooling</td></tr>
+        <tr><td>Learning curve</td><td>Steep (Java + Spring concepts)</td><td>Moderate (Python + Django conventions)</td></tr>
+        <tr><td>Enterprise adoption</td><td>Dominant in finance/banking</td><td>Strong in startups, media</td></tr>
+        <tr><td>ML/AI integration</td><td>Via REST calls to Python services</td><td>✅ Native (PyTorch, scikit-learn)</td></tr>
+        <tr><td>GraphQL</td><td>DGS (Netflix) / graphql-java</td><td>Strawberry / graphene-django</td></tr>
+        <tr><td>WebSockets</td><td>Spring WebSocket + STOMP</td><td>Django Channels (ASGI)</td></tr>
+        <tr><td>Testing speed</td><td>Slow (Spring context startup)</td><td>Fast (Django TestCase)</td></tr>
+        <tr><td>Cloud-native</td><td>✅ Spring Cloud, native K8s support</td><td>Works, needs more setup</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid-2">
+    <div class="card green">
+      <div class="card-label">Choose Spring Boot When</div>
+      <ul style="font-size:13px;">
+        <li>High throughput required (&gt;10k req/s)</li>
+        <li>Microservices architecture</li>
+        <li>Java team already exists</li>
+        <li>Banking, fintech, enterprise domain</li>
+        <li>Need Spring Cloud ecosystem</li>
+        <li>Strong typing critical (financial calculations)</li>
+        <li>Long-running company platform</li>
+      </ul>
+    </div>
+    <div class="card django">
+      <div class="card-label">Choose Django When</div>
+      <ul style="font-size:13px;">
+        <li>Rapid MVP development</li>
+        <li>ML/AI integration in same codebase</li>
+        <li>Python team already exists</li>
+        <li>Need admin UI out of the box</li>
+        <li>Content management, media sites</li>
+        <li>Smaller team, faster iteration</li>
+        <li>Data science pipeline integration</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="recap-box">
+    <div class="recap-label">📖 The Big 30-Second Recap</div>
+    <p style="font-size:13.5px;margin:0;">
+      <strong>JVM</strong> = runs Java bytecode (like V8 runs JS). <strong>Maven</strong> = npm + build tool (pom.xml). <strong>Spring IoC</strong> = container creates + wires beans. <strong>Spring Boot</strong> = auto-config + starters + embedded Tomcat. <strong>Spring MVC</strong> = @RestController handles HTTP. <strong>Spring Data JPA</strong> = Hibernate ORM with repo pattern. <strong>Spring Security</strong> = filter chain guards endpoints. <strong>Spring Cloud</strong> = Eureka + Config + Gateway + Feign + CircuitBreaker for microservices. <strong>Docker</strong> = image (recipe) + container (instance). <strong>Kubernetes</strong> = desired state orchestration at scale. <strong>AWS</strong> = ECS/EKS (run containers) + RDS (DB) + SQS (queue) + S3 (files). <strong>Django</strong> = batteries-included Python framework (ORM + admin + auth). <strong>DRF</strong> = Spring MVC for Python (Serializers + ViewSets). <strong>Celery</strong> = async task queue (like @Async + RabbitMQ).
+    </p>
+  </div>
+</section>
+
+</main>
+
+<script>
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('section[id], div[id="top"]');
+  const navLinks = document.querySelectorAll('nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + entry.target.id) {
+            link.classList.add('active');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-10% 0px -80% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

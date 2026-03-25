@@ -1,0 +1,2955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modern Web Frameworks — Under the Hood v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f14;--surface:#161921;--surface2:#1e2230;--border:#2a2f42;--border2:#3a4060;
+    --text:#e4e8f0;--muted:#7a849a;--accent:#6c8aff;--accent2:#50c8a0;--accent3:#f7c94b;
+    --accent4:#ff7c7c;--accent5:#c479f0;--code-bg:#0a0c10;
+    --ts:#3b82f6;--js:#f59e0b;--angular:#dd0031;--react:#61dafb;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.7;}
+  nav{position:fixed;top:0;left:0;width:230px;height:100vh;background:var(--surface);border-right:1px solid var(--border);padding:20px 14px;overflow-y:auto;z-index:100;}
+  nav .logo{font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:var(--accent);margin-bottom:20px;line-height:1.3;border-bottom:1px solid var(--border);padding-bottom:14px;}
+  nav a{display:block;padding:6px 10px;border-radius:5px;color:var(--muted);text-decoration:none;font-size:12px;transition:all 0.2s;margin-bottom:1px;}
+  nav a:hover,nav a.active{background:var(--surface2);color:var(--text);}
+  nav .nav-section{font-size:9.5px;text-transform:uppercase;letter-spacing:1.2px;color:var(--border2);margin:14px 0 5px 10px;}
+  main{margin-left:230px;padding:0 44px 80px;max-width:960px;}
+  section{padding:60px 0 44px;border-bottom:1px solid var(--border);}
+  section:last-child{border-bottom:none;}
+  .section-tag{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:8px;}
+  h1{font-family:'Playfair Display',serif;font-size:32px;line-height:1.2;color:var(--text);margin-bottom:12px;}
+  h2{font-size:22px;font-weight:700;color:var(--text);margin:36px 0 14px;line-height:1.3;}
+  h3{font-size:16px;font-weight:600;color:var(--text);margin:22px 0 8px;}
+  .subtitle{font-size:16px;color:var(--muted);max-width:600px;margin-bottom:28px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0;}
+  .card.accent{border-color:var(--accent);background:rgba(108,138,255,0.05);}
+  .card.green{border-color:var(--accent2);background:rgba(80,200,160,0.05);}
+  .card.amber{border-color:var(--accent3);background:rgba(247,201,75,0.05);}
+  .card.red{border-color:var(--accent4);background:rgba(255,124,124,0.05);}
+  .card.purple{border-color:var(--accent5);background:rgba(196,121,240,0.05);}
+  .card-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+  .card.accent .card-label{color:var(--accent);}
+  .card.green .card-label{color:var(--accent2);}
+  .card.amber .card-label{color:var(--accent3);}
+  .card.red .card-label{color:var(--accent4);}
+  .card.purple .card-label{color:var(--accent5);}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:16px 0;}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;margin:10px 0;}
+  code{font-family:'JetBrains Mono',monospace;font-size:12.5px;}
+  .inline-code{background:var(--surface2);border:1px solid var(--border);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--accent2);font-family:'JetBrains Mono',monospace;}
+  .kw{color:#c792ea;}.str{color:#c3e88d;}.fn{color:#82aaff;}.cmt{color:#546e7a;font-style:italic;}
+  .num{color:#f78c6c;}.type{color:#ffcb6b;}.tag{color:#ff5572;}.attr{color:#ffcb6b;}
+  .pipeline{display:flex;align-items:center;gap:0;margin:20px 0;overflow-x:auto;padding-bottom:8px;flex-wrap:wrap;}
+  .pipe-step{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;text-align:center;min-width:90px;flex-shrink:0;}
+  .pipe-step .icon{font-size:18px;margin-bottom:3px;}
+  .pipe-step .name{font-size:11.5px;font-weight:600;color:var(--text);}
+  .pipe-step .desc{font-size:10px;color:var(--muted);margin-top:2px;}
+  .pipe-arrow{color:var(--muted);font-size:16px;padding:0 3px;flex-shrink:0;}
+  .evo-tree{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:18px 22px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.85;margin:14px 0;}
+  .evo-tree .root{color:var(--accent3);font-weight:600;}
+  .evo-tree .problem{color:var(--accent4);}
+  .evo-tree .solution{color:var(--accent2);}
+  .evo-tree .note{color:var(--muted);}
+  .hooks-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:16px 0;}
+  .hook-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+  .hook-card .emoji{font-size:24px;margin-bottom:6px;}
+  .hook-card .hook-title{font-size:11px;font-weight:700;color:var(--accent3);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;}
+  .hook-card p{font-size:12px;color:var(--muted);line-height:1.5;}
+  .story-box{background:linear-gradient(135deg,rgba(108,138,255,0.08) 0%,rgba(80,200,160,0.05) 100%);border:1px solid var(--border2);border-radius:12px;padding:22px;margin:18px 0;position:relative;}
+  .story-box::before{content:'"';font-family:'Playfair Display',serif;font-size:70px;color:var(--accent);opacity:0.2;position:absolute;top:-8px;left:14px;line-height:1;}
+  .story-box .story-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:8px;}
+  .comp-table{width:100%;border-collapse:collapse;margin:18px 0;font-size:13px;}
+  .comp-table th{padding:11px 14px;text-align:left;background:var(--surface2);border-bottom:2px solid var(--border2);font-weight:600;}
+  .comp-table th.angular-col{color:var(--angular);}
+  .comp-table th.react-col{color:var(--react);}
+  .comp-table td{padding:10px 14px;border-bottom:1px solid var(--border);}
+  .comp-table tr:hover td{background:var(--surface2);}
+  .comp-table td:first-child{color:var(--accent3);font-weight:600;font-size:12px;}
+  .recall-box{background:var(--surface2);border-left:4px solid var(--accent3);border-radius:0 8px 8px 0;padding:14px 18px;margin:14px 0;}
+  .recall-box .recall-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent3);margin-bottom:6px;}
+  .reverse-box{background:rgba(255,124,124,0.06);border:1px solid rgba(255,124,124,0.25);border-radius:8px;padding:14px 18px;margin:14px 0;}
+  .reverse-box .rev-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent4);margin-bottom:6px;}
+  .recap-box{background:rgba(80,200,160,0.07);border:1px solid rgba(80,200,160,0.3);border-radius:8px;padding:14px 18px;margin:18px 0;}
+  .recap-box .recap-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent2);margin-bottom:6px;}
+  .code-compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;}
+  .code-side-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:5px 10px;border-radius:5px 5px 0 0;display:inline-block;}
+  .before-label{background:rgba(245,158,11,0.2);color:#fcd34d;}
+  .after-label{background:rgba(80,200,160,0.2);color:#6ee7b7;}
+  .angular-label{background:rgba(221,0,49,0.2);color:#fca5a5;}
+  .react-label{background:rgba(97,218,251,0.15);color:#67e8f9;}
+  .browser-pipe{display:flex;flex-direction:column;gap:0;margin:18px 0;}
+  .browser-step{display:flex;align-items:center;gap:14px;padding:13px 18px;border:1px solid var(--border);margin-bottom:-1px;position:relative;}
+  .browser-step:first-child{border-radius:8px 8px 0 0;}
+  .browser-step:last-child{border-radius:0 0 8px 8px;}
+  .browser-step .step-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+  .browser-step .step-content{flex:1;}
+  .browser-step .step-name{font-weight:600;font-size:13.5px;}
+  .browser-step .step-desc{font-size:12px;color:var(--muted);margin-top:2px;}
+  .browser-step .step-code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--code-bg);padding:3px 7px;border-radius:4px;color:var(--accent2);flex-shrink:0;}
+  blockquote{border-left:3px solid var(--accent);padding:11px 18px;margin:14px 0;background:rgba(108,138,255,0.05);border-radius:0 8px 8px 0;font-style:italic;color:var(--text);}
+  blockquote cite{display:block;font-size:11.5px;color:var(--muted);margin-top:5px;font-style:normal;}
+  ul,ol{padding-left:20px;margin:10px 0;}
+  li{margin-bottom:5px;color:var(--text);font-size:14px;}
+  p{margin-bottom:12px;color:var(--text);font-size:14px;}
+  strong{color:var(--text);font-weight:600;}
+  .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+  .badge-new{background:rgba(80,200,160,0.2);color:var(--accent2);}
+  .badge-old{background:rgba(255,124,124,0.2);color:var(--accent4);}
+  .badge-key{background:rgba(247,201,75,0.2);color:var(--accent3);}
+  .hero{padding:70px 0 44px;border-bottom:1px solid var(--border);}
+  .hero-tag{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);font-weight:600;margin-bottom:14px;}
+  .hero h1{font-size:44px;margin-bottom:16px;}
+  .hero-meta{display:flex;gap:18px;align-items:center;margin-top:24px;flex-wrap:wrap;}
+  .hero-meta .meta-item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);}
+  .section-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:7px;font-size:14px;font-weight:700;margin-right:10px;vertical-align:middle;}
+  .file-badge{display:inline-block;background:var(--surface2);border:1px solid var(--border2);padding:2px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent3);margin:2px 3px;}
+  .alert-box{background:rgba(247,201,75,0.08);border:1px solid rgba(247,201,75,0.4);border-radius:8px;padding:14px 18px;margin:14px 0;}
+  .alert-box .alert-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent3);margin-bottom:6px;}
+  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+  @media(max-width:900px){nav{display:none;}main{margin-left:0;padding:0 20px 60px;}.grid-2,.grid-3,.hooks-grid,.code-compare{grid-template-columns:1fr;}.pipeline{flex-wrap:wrap;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Modern Web<br>Frameworks<br>Under the Hood v3</div>
+  <div class="nav-section">Start</div>
+  <a href="#intro">Introduction</a>
+  <div class="nav-section">Core Concepts</div>
+  <a href="#browser">① Browser Rendering</a>
+  <a href="#language-gap">② TS → JS Gap</a>
+  <a href="#build-pipeline">③ Build Pipeline</a>
+  <a href="#di">④ Dependency Injection</a>
+  <div class="nav-section">Frameworks</div>
+  <a href="#angular">⑤ Angular System</a>
+  <a href="#react">⑥ React System</a>
+  <a href="#rxjs">⑦ RxJS Deep Dive</a>
+  <a href="#comparison">⑧ Comparison</a>
+  <div class="nav-section">Internals</div>
+  <a href="#folder">⑨ Folder Structure</a>
+  <a href="#configs">⑩ Build Config Files</a>
+  <div class="nav-section">Package Ecosystem</div>
+  <a href="#pkgjson">⑪ package.json Deep Dive</a>
+  <a href="#nodemodules">⑫ node_modules Ecosystem</a>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<div class="hero" id="intro">
+  <div class="hero-tag">Universal Memory Super Prompt — v3 Expanded Edition</div>
+  <h1>From Code to Pixels:<br>React & Angular Unpacked</h1>
+  <p class="subtitle">Everything from browser pixel painting to Zone.js spying, from Go-powered compilers to the ^ and ~ symbols that can break your production deploy — with metaphors, accidents, and stories you won't forget.</p>
+  <div class="hero-meta">
+    <div class="meta-item"><span>🧠</span> 12 Deep Sections</div>
+    <div class="meta-item"><span>⚡</span> 40+ Topics</div>
+    <div class="meta-item"><span>🏗️</span> All Config Files</div>
+    <div class="meta-item"><span>📦</span> node_modules Ecosystem</div>
+    <div class="meta-item"><span>🗂️</span> Folder Maps</div>
+  </div>
+</div>
+
+<!-- ===== SECTION 1: BROWSER ===== -->
+<section id="browser">
+<div class="section-tag">Section 1 · Core Concept</div>
+<h1><span class="section-number" style="background:rgba(108,138,255,0.2);color:var(--accent);">1</span>How the Browser Renders a Page</h1>
+
+<div class="card accent">
+  <div class="card-label">📸 Snapshot</div>
+  <p>A browser is a <strong>construction site</strong>. HTML is the blueprint, CSS is the interior designer's brief. The browser is the foreman who must build, paint, and furnish the house — in the right order — before you can move in.</p>
+</div>
+
+<h2>The Full Rendering Pipeline</h2>
+
+<div class="browser-pipe">
+  <div class="browser-step" style="background:rgba(108,138,255,0.06);">
+    <div class="step-num" style="background:rgba(108,138,255,0.25);color:var(--accent);">1</div>
+    <div class="step-content">
+      <div class="step-name">HTML Parsing → DOM Construction</div>
+      <div class="step-desc">Browser reads raw HTML bytes character by character. Converts to tokens (tags, attributes, text). Builds a tree of Node objects. This is the DOM.</div>
+    </div>
+    <div class="step-code">&lt;div&gt; → Node</div>
+  </div>
+  <div class="browser-step" style="background:rgba(196,121,240,0.05);">
+    <div class="step-num" style="background:rgba(196,121,240,0.25);color:var(--accent5);">2</div>
+    <div class="step-content">
+      <div class="step-name">CSS Parsing → CSSOM (Render-Blocking)</div>
+      <div class="step-desc">All CSS sources merged. Browser will NOT paint a single pixel until CSSOM is complete — even if DOM is ready.</div>
+    </div>
+    <div class="step-code">color:red → Rule</div>
+  </div>
+  <div class="browser-step" style="background:rgba(247,201,75,0.05);">
+    <div class="step-num" style="background:rgba(247,201,75,0.25);color:var(--accent3);">3</div>
+    <div class="step-content">
+      <div class="step-name">Render Tree = DOM ∩ CSSOM</div>
+      <div class="step-desc">Merges both trees. <span class="inline-code">display:none</span> excluded. <span class="inline-code">visibility:hidden</span> included (takes space). Only visible nodes survive.</div>
+    </div>
+    <div class="step-code">DOM ∩ CSSOM</div>
+  </div>
+  <div class="browser-step" style="background:rgba(80,200,160,0.05);">
+    <div class="step-num" style="background:rgba(80,200,160,0.25);color:var(--accent2);">4</div>
+    <div class="step-content">
+      <div class="step-name">Layout / Reflow — Position & Size</div>
+      <div class="step-desc">CPU computes exact pixel coordinates for every element. Flex, grid, percentages all resolved. The most expensive step.</div>
+    </div>
+    <div class="step-code">x, y, w, h</div>
+  </div>
+  <div class="browser-step" style="background:rgba(255,124,124,0.05);">
+    <div class="step-num" style="background:rgba(255,124,124,0.25);color:var(--accent4);">5</div>
+    <div class="step-content">
+      <div class="step-name">Paint — Pixels to Layers</div>
+      <div class="step-desc">Fill color, text, borders, shadows — written to off-screen bitmaps called layers. Does NOT recalculate positions.</div>
+    </div>
+    <div class="step-code">pixels → bits</div>
+  </div>
+  <div class="browser-step">
+    <div class="step-num" style="background:rgba(108,138,255,0.2);color:var(--accent);">6</div>
+    <div class="step-content">
+      <div class="step-name">Composite — GPU Combines Layers</div>
+      <div class="step-desc">GPU assembles layers in z-index order. <span class="inline-code">transform</span> and <span class="inline-code">opacity</span> animations ONLY trigger this step — skipping Layout and Paint entirely.</div>
+    </div>
+    <div class="step-code">GPU assembles</div>
+  </div>
+</div>
+
+<h2>Deep Dive: Why Does JS Pause DOM Parsing?</h2>
+
+<div class="card red">
+  <div class="card-label">🚨 The Script Blocking Crisis — Explained Step by Step</div>
+  <p>When the HTML parser encounters a <span class="inline-code">&lt;script src="app.js"&gt;</span> tag without any special attribute, it does this:</p>
+  <ol style="font-size:13.5px;line-height:1.8;">
+    <li><strong>Parser STOPS immediately</strong> — freezes, cursor doesn't move</li>
+    <li><strong>Network fetch</strong> — browser downloads app.js over the network</li>
+    <li><strong>JS engine executes</strong> — runs every line of that script</li>
+    <li><strong>Parser resumes</strong> — only now does it continue reading the remaining HTML</li>
+  </ol>
+  <p><strong>Why?</strong> Because JavaScript can mutate the DOM while the parser is building it. If JS runs <span class="inline-code">document.write("&lt;div&gt;")</span> mid-parse, it literally injects new HTML into the stream. The browser has no choice but to stop, let JS run, then see if the HTML stream has changed before continuing.</p>
+</div>
+
+<div class="card amber">
+  <div class="card-label">🩺 The async and defer Cure</div>
+  <pre><span class="cmt">&lt;!-- BLOCKING — worst case, never do this in &lt;head&gt; --&gt;</span>
+<span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="str">"app.js"</span><span class="tag">&gt;&lt;/script&gt;</span>
+<span class="cmt">&lt;!-- ↑ HTML parser STOPS. Downloads. Executes. Resumes. --&gt;</span>
+
+<span class="cmt">&lt;!-- DEFER — downloads in parallel, executes AFTER HTML parsed --&gt;</span>
+<span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="str">"app.js"</span> <span class="attr">defer</span><span class="tag">&gt;&lt;/script&gt;</span>
+<span class="cmt">&lt;!-- ↑ Download happens in background. Execution waits. --&gt;</span>
+<span class="cmt">&lt;!-- DOMContentLoaded fires AFTER deferred scripts run --&gt;</span>
+
+<span class="cmt">&lt;!-- ASYNC — downloads in parallel, executes immediately when ready --&gt;</span>
+<span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="str">"app.js"</span> <span class="attr">async</span><span class="tag">&gt;&lt;/script&gt;</span>
+<span class="cmt">&lt;!-- ↑ Download in background. When done, parser PAUSES to run it. --&gt;</span>
+<span class="cmt">&lt;!-- Order not guaranteed. Good for analytics, not app code. --&gt;</span>
+
+<span class="cmt">&lt;!-- INLINE modules — always deferred by default --&gt;</span>
+<span class="tag">&lt;script</span> <span class="attr">type</span>=<span class="str">"module"</span> <span class="attr">src</span>=<span class="str">"main.js"</span><span class="tag">&gt;&lt;/script&gt;</span></pre>
+  <p style="font-size:13px;color:var(--muted);">Angular and React both use <span class="inline-code">defer</span> on their bundled scripts. That's why <span class="inline-code">&lt;script defer src="main.abc123.js"&gt;</span> appears in your production <span class="inline-code">index.html</span>.</p>
+</div>
+
+<h2>Does Script Blocking Still Happen with React & Angular?</h2>
+
+<div class="card green">
+  <div class="card-label">✅ What React & Angular Do Automatically</div>
+  <p>Modern React (Vite/CRA) and Angular CLI <strong>automatically solve the script blocking problem</strong> in their generated <span class="inline-code">index.html</span>. You never manually write script tags — the build tool injects them with the correct attributes:</p>
+  <div class="code-compare">
+    <div class="code-side">
+      <span class="code-side-label angular-label">Angular's generated index.html (prod)</span>
+      <pre style="font-size:11.5px;"><span class="tag">&lt;html&gt;</span>
+<span class="tag">&lt;head&gt;</span>
+  <span class="cmt">&lt;!-- CSS injected here — render-blocking intentionally --&gt;</span>
+  <span class="cmt">&lt;!-- (styles must load before content shows) --&gt;</span>
+  <span class="tag">&lt;link</span> <span class="attr">rel</span>=<span class="str">"stylesheet"</span> <span class="attr">href</span>=<span class="str">"styles.abc.css"</span><span class="tag">&gt;</span>
+<span class="tag">&lt;/head&gt;</span>
+<span class="tag">&lt;body&gt;</span>
+  <span class="tag">&lt;app-root&gt;&lt;/app-root&gt;</span>
+  <span class="cmt">&lt;!-- All scripts use defer — parser never pauses --&gt;</span>
+  <span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="str">"runtime.abc.js"</span> <span class="attr">defer</span><span class="tag">&gt;&lt;/script&gt;</span>
+  <span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="str">"polyfills.abc.js"</span> <span class="attr">defer</span><span class="tag">&gt;&lt;/script&gt;</span>
+  <span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="str">"main.abc.js"</span> <span class="attr">defer</span><span class="tag">&gt;&lt;/script&gt;</span>
+<span class="tag">&lt;/body&gt;&lt;/html&gt;</span></pre>
+    </div>
+    <div class="code-side">
+      <span class="code-side-label react-label">Vite React generated index.html (prod)</span>
+      <pre style="font-size:11.5px;"><span class="tag">&lt;html&gt;</span>
+<span class="tag">&lt;head&gt;</span>
+  <span class="cmt">&lt;!-- Vite uses type="module" — browsers treat</span>
+<span class="cmt">       module scripts as deferred by default --&gt;</span>
+  <span class="tag">&lt;script</span> <span class="attr">type</span>=<span class="str">"module"</span>
+    <span class="attr">crossorigin</span>
+    <span class="attr">src</span>=<span class="str">"/assets/index.abc.js"</span><span class="tag">&gt;&lt;/script&gt;</span>
+  <span class="tag">&lt;link</span> <span class="attr">rel</span>=<span class="str">"stylesheet"</span>
+    <span class="attr">href</span>=<span class="str">"/assets/index.abc.css"</span><span class="tag">&gt;</span>
+  <span class="cmt">&lt;!-- type="module" = implicit defer</span>
+<span class="cmt">       No explicit defer needed! --&gt;</span>
+<span class="tag">&lt;/head&gt;</span>
+<span class="tag">&lt;body&gt;</span>
+  <span class="tag">&lt;div</span> <span class="attr">id</span>=<span class="str">"root"</span><span class="tag">&gt;&lt;/div&gt;</span>
+<span class="tag">&lt;/body&gt;&lt;/html&gt;</span></pre>
+    </div>
+  </div>
+  <p><strong>Key insight:</strong> <span class="inline-code">type="module"</span> scripts are <em>always deferred</em> by the HTML spec. Since Vite bundles ES Modules, it gets deferred behavior for free. Angular explicitly adds <span class="inline-code">defer</span>. Either way, <strong>the HTML parser is never paused by app scripts in a modern build</strong>.</p>
+</div>
+
+<div class="card amber">
+  <div class="card-label">⚠️ What We Still Miss Under the Hood — Hidden Blockers</div>
+  <p>Even with React/Angular handling script injection correctly, these under-the-hood blockers can still hurt you:</p>
+  <div class="grid-2">
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--accent4);">Still Blocking in Modern Apps</h3>
+      <ul style="font-size:13px;">
+        <li><strong>Third-party synchronous scripts</strong> — analytics, A/B testing tools (Optimizely, VWO) often require <em>synchronous</em> placement in <span class="inline-code">&lt;head&gt;</span>. They block parsing. You didn't write them but they ship in your page.</li>
+        <li><strong>Google Tag Manager</strong> — the GTM snippet itself is synchronous by design (so it can modify the page before render). It adds ~200ms on slow 3G.</li>
+        <li><strong>CSS-in-JS First Paint</strong> — styled-components/Emotion inject <span class="inline-code">&lt;style&gt;</span> tags into <span class="inline-code">&lt;head&gt;</span> at runtime. On SSR, this blocks hydration. On CSR, causes FOUC on first load.</li>
+        <li><strong>Web Font loading</strong> — Google Fonts linked in <span class="inline-code">&lt;head&gt;</span> is render-blocking by default. Use <span class="inline-code">font-display: swap</span> + preconnect hints to mitigate.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--accent4);">Hidden JS Thread Blocking</h3>
+      <ul style="font-size:13px;">
+        <li><strong>Large bundle parse time</strong> — even after a deferred script downloads, the JS engine must <em>parse and compile</em> it. A 2MB bundle can take 3–5 seconds of CPU time on a budget Android device. Scripts are deferred — but parsing still blocks the main thread.</li>
+        <li><strong>React hydration</strong> — in SSR React apps, hydration (attaching event listeners to server-rendered HTML) blocks the main thread. Until hydration completes, the page looks interactive but clicks do nothing.</li>
+        <li><strong>Angular bootstrap</strong> — Angular's DI container construction, module compilation, and initial change detection all run synchronously on the main thread after the script loads.</li>
+        <li><strong>localStorage / sessionStorage access</strong> — these are synchronous APIs! Accessing them blocks the main thread. Many analytics libraries do this at startup.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card purple">
+  <div class="card-label">🔬 The Real-World Performance Audit Checklist</div>
+  <p>Open Chrome DevTools → Lighthouse → Run audit. These are the hidden blockers it finds that React/Angular <strong>do not automatically fix</strong>:</p>
+  <ul style="font-size:13.5px;">
+    <li><strong>Render-blocking resources</strong> — third-party CSS and scripts Angular/React didn't inject</li>
+    <li><strong>Unused JavaScript</strong> — code in your bundle that was imported but never called (tree shaking missed it)</li>
+    <li><strong>Long main-thread tasks</strong> — parse+compile time for large bundles even after defer</li>
+    <li><strong>Largest Contentful Paint (LCP) delay</strong> — hero image not preloaded (<span class="inline-code">&lt;link rel="preload"&gt;</span> missing)</li>
+    <li><strong>Cumulative Layout Shift (CLS)</strong> — fonts loading late cause text to jump, images without dimensions shift layout</li>
+    <li><strong>Total Blocking Time (TBT)</strong> — long tasks (50ms+) that block user interaction</li>
+  </ul>
+</div>
+
+<h2>CSS Render-Blocking — How to Cross-Verify It?</h2>
+
+<div class="card purple">
+  <div class="card-label">🔬 How to Verify CSS Is Blocking Render (Live Experiment)</div>
+  <p><strong>Experiment 1 — Open Chrome DevTools → Performance Tab → Record → Reload.</strong> You'll see a timeline. Look for the <span class="inline-code">Parse Stylesheet</span> event. The "First Paint" marker will always appear AFTER all stylesheet parsing events. That's your proof.</p>
+  <p><strong>Experiment 2 — Throttle to Slow 3G, then open DevTools → Network tab → check "Disable cache". Reload.</strong> You'll see the page sit blank (white screen) while the CSS file downloads. As soon as the CSS waterfall bar completes, the page appears. CSS literally holds a red flag in front of the renderer.</p>
+  <p><strong>Experiment 3 — FOUC (Flash of Unstyled Content):</strong> Move your <span class="inline-code">&lt;link rel="stylesheet"&gt;</span> to the bottom of <span class="inline-code">&lt;body&gt;</span> instead of <span class="inline-code">&lt;head&gt;</span>. You'll briefly see raw unstyled HTML, then a jarring style jump as CSS loads late. This is the browser "painting before CSS" which is why CSS in <span class="inline-code">&lt;head&gt;</span> is mandatory.</p>
+</div>
+
+<div class="card green">
+  <div class="card-label">💉 What If CSS Is Injected Dynamically After Page Load?</div>
+  <p>When you inject CSS via JavaScript <em>after</em> initial page load (e.g., <span class="inline-code">document.head.appendChild(styleElement)</span> or loading a CSS-in-JS library), the browser:</p>
+  <ol style="font-size:13.5px;line-height:1.8;">
+    <li>Parses the new CSS and updates the CSSOM</li>
+    <li>Merges the updated CSSOM with the existing DOM</li>
+    <li>Triggers a <strong>full Reflow + Repaint</strong> for affected elements</li>
+    <li>You'll see a visual flash if the newly injected styles change layout</li>
+  </ol>
+  <p><strong>This is exactly what CSS-in-JS libraries (styled-components, Emotion) do</strong> — they inject &lt;style&gt; tags at runtime. It's why they can cause layout flash on first render and why server-side rendering (SSR) pre-injects CSS to avoid it.</p>
+  <p><strong>Dynamically loaded CSS does NOT block initial render</strong> — it only triggers a re-render of affected nodes. The initial render has already happened. You're now in Reflow territory, not render-blocking territory.</p>
+</div>
+
+<h2>Reflow — When Is It Mandatory? Why Is It Expensive?</h2>
+
+<div class="card red">
+  <div class="card-label">🔴 Reflow Is Mandatory When Geometry Changes</div>
+  <p>Reflow <em>cannot</em> be avoided when the browser genuinely doesn't know where things should be. It's mandatory when:</p>
+  <div class="grid-2">
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--accent4);">DOM Changes that force Reflow</h3>
+      <ul style="font-size:13px;">
+        <li>Adding or removing an element from the DOM</li>
+        <li>Changing <span class="inline-code">width</span>, <span class="inline-code">height</span>, <span class="inline-code">margin</span>, <span class="inline-code">padding</span></li>
+        <li>Changing <span class="inline-code">font-size</span>, <span class="inline-code">font-family</span></li>
+        <li>Changing <span class="inline-code">display</span> property (none ↔ block)</li>
+        <li>Window resize</li>
+        <li>Changing text content (may change element size)</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--accent4);">Reading Geometry Forces Reflow Too</h3>
+      <ul style="font-size:13px;">
+        <li><span class="inline-code">element.offsetWidth / offsetHeight</span></li>
+        <li><span class="inline-code">element.getBoundingClientRect()</span></li>
+        <li><span class="inline-code">element.scrollTop / scrollLeft</span></li>
+        <li><span class="inline-code">window.getComputedStyle(el)</span></li>
+        <li>These force browser to flush queued changes and recalculate immediately</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card amber">
+  <div class="card-label">⚠️ Layout Thrashing — The Silent Killer</div>
+  <p>The worst pattern in frontend performance is reading AND writing geometry in a loop — called <strong>Layout Thrashing</strong>:</p>
+  <div class="code-compare">
+    <div class="code-side">
+      <span class="code-side-label before-label">Layout Thrashing (Terrible)</span>
+      <pre><span class="cmt">// BAD: Read → Write → Read → Write in loop</span>
+<span class="cmt">// Browser is forced to reflow EVERY iteration</span>
+elements.forEach(el => {
+  <span class="cmt">// READ geometry → forces sync reflow</span>
+  <span class="kw">const</span> w = el.offsetWidth;
+  <span class="cmt">// WRITE geometry → invalidates layout</span>
+  el.style.width = (w * <span class="num">2</span>) + <span class="str">'px'</span>;
+});
+<span class="cmt">// 100 elements = 100 forced reflows. DISASTER.</span></pre>
+    </div>
+    <div class="code-side">
+      <span class="code-side-label after-label">Batch Reads then Writes (Fast)</span>
+      <pre><span class="cmt">// GOOD: Read ALL geometry first</span>
+<span class="kw">const</span> widths = elements.map(el => el.offsetWidth);
+<span class="cmt">// ONE reflow here to satisfy all reads</span>
+
+<span class="cmt">// Then WRITE ALL geometry</span>
+elements.forEach((el, i) => {
+  el.style.width = (widths[i] * <span class="num">2</span>) + <span class="str">'px'</span>;
+});
+<span class="cmt">// ONE reflow at end. 100x faster.</span></pre>
+    </div>
+  </div>
+  <p style="font-size:13px;color:var(--muted);">React's Virtual DOM batch system solves layout thrashing for state updates. All DOM writes are batched and applied in one pass. Libraries like <span class="inline-code">FastDOM</span> solve it for direct DOM manipulation.</p>
+</div>
+
+<h2>Is Layout Thrashing Solved Now? — What React & Angular Do</h2>
+
+<div class="card green">
+  <div class="card-label">✅ How React Eliminates Layout Thrashing</div>
+  <p>React's reconciler <strong>batches all DOM mutations</strong> from a single render cycle and applies them in one synchronous pass in the "commit phase." This means React never alternates reads and writes to the DOM mid-render:</p>
+  <div class="evo-tree">
+<span class="root">React Render Lifecycle (thrashing-safe)</span>
+ │
+ ├── <span class="solution">1. Render Phase (pure, no DOM touches)</span>
+ │    └── <span class="note">All component functions run → produce new VDOM tree</span>
+ │    └── <span class="note">Diffing happens here — only JS memory operations, zero DOM reads</span>
+ │
+ ├── <span class="solution">2. Commit Phase (DOM writes, ONE batch)</span>
+ │    ├── <span class="note">Before Mutation: runs useLayoutEffect cleanups</span>
+ │    ├── <span class="note">Mutation: ALL DOM changes applied in one pass (no reads here)</span>
+ │    └── <span class="note">Layout: runs useLayoutEffect (post-DOM, pre-paint)</span>
+ │
+ └── <span class="solution">3. Passive Effects (after paint)</span>
+      └── <span class="note">useEffect runs here — safely separated from DOM writes</span>
+  </div>
+  <p><strong>But you can still thrash!</strong> React only protects its own state updates. If you write direct DOM manipulation code (<span class="inline-code">ref.current.style.width = ...</span>) inside a <span class="inline-code">useEffect</span> that also reads geometry — you've re-introduced thrashing manually. React trusts you.</p>
+  <pre><span class="cmt">// Thrashing STILL possible with refs:</span>
+useEffect(() => {
+  <span class="cmt">// READ — forces browser to calculate layout</span>
+  <span class="kw">const</span> h = containerRef.current.offsetHeight;
+  <span class="cmt">// WRITE — invalidates layout that was just calculated</span>
+  itemRef.current.style.height = h + <span class="str">'px'</span>;
+  <span class="cmt">// If this runs 50 times in a loop → still thrashes</span>
+});
+
+<span class="cmt">// Safe version — use CSS variables or useMemo to avoid:</span>
+<span class="kw">const</span> height = <span class="fn">useMemo</span>(() => <span class="fn">measureOnce</span>(), [deps]);</pre>
+</div>
+
+<div class="card amber">
+  <div class="card-label">⚠️ Angular's Approach — Zone.js + OnPush Helps, But Not Fully</div>
+  <p>Angular doesn't use Virtual DOM, so it doesn't batch DOM writes the same way React does. Zone.js triggers change detection, Angular then directly updates the real DOM for changed bindings. The risk of layout thrashing depends on how you write your components:</p>
+  <ul style="font-size:13.5px;">
+    <li><strong>Template bindings (<span class="inline-code">{{ value }}</span>)</strong> — Angular updates these after each CD cycle in one pass. Safe.</li>
+    <li><strong>Direct DOM access via <span class="inline-code">ElementRef</span></strong> — same risk as React refs. You control when you read and write.</li>
+    <li><strong>OnPush strategy</strong> — reduces how often CD runs, indirectly reducing thrashing risk.</li>
+    <li><strong>Angular CDK / Animations</strong> — use <span class="inline-code">requestAnimationFrame</span> internally to batch visual updates with the browser's paint cycle.</li>
+  </ul>
+</div>
+
+<div class="card accent">
+  <div class="card-label">🏆 The Modern Browser Answer: requestAnimationFrame + ResizeObserver</div>
+  <p>Beyond frameworks, the browser itself has evolved to reduce thrashing patterns:</p>
+  <ul style="font-size:13.5px;">
+    <li><span class="inline-code">requestAnimationFrame(cb)</span> — schedule writes right before the browser's next paint. Reads before rAF, writes inside rAF = zero thrash.</li>
+    <li><span class="inline-code">ResizeObserver</span> — get notified when an element's size changes <em>after layout</em>, without polling <span class="inline-code">offsetWidth</span> in a loop.</li>
+    <li><span class="inline-code">IntersectionObserver</span> — detect visibility without reading <span class="inline-code">getBoundingClientRect()</span> in scroll handlers.</li>
+    <li><span class="inline-code">CSS Container Queries</span> — let the browser handle size-based styling without JS reading dimensions at all.</li>
+  </ul>
+  <p><strong>Bottom line:</strong> React mostly solves layout thrashing for state-driven UI. Angular helps but less automatically. Both can still be defeated by direct DOM manipulation. The browser's new observer APIs make thrash-free code achievable without frameworks at all.</p>
+</div>
+
+<blockquote>Reflow is expensive because the browser's layout engine must solve a <strong>constraint system</strong>. Every element's position depends on its parent, its siblings, and its own content. Change one box and the ripple can affect hundreds of sibling and parent elements. It's like changing a number in a spreadsheet that 200 other cells depend on — all must recalculate.
+<cite>— Why Reflow is O(n) to O(n²) depending on DOM depth and CSS complexity</cite></blockquote>
+
+<div class="recall-box">
+  <div class="recall-label">⚡ Recall Triggers</div>
+  <strong>JS blocks parsing</strong> = surgeon stopping mid-operation to answer a phone call. <span class="inline-code">defer</span> = callback voicemail. <span class="inline-code">async</span> = answering immediately then resuming. <strong>CSS blocks paint</strong> = can't hang art on unpainted walls. <strong>Reflow</strong> = domino effect — move one tile, all tiles need repositioning.
+</div>
+
+<div class="recap-box">
+  <div class="recap-label">⏱ 30-Second Revision</div>
+  HTML→DOM (paused by sync scripts). CSS→CSSOM (render-blocking always). DOM+CSSOM→Render Tree. Layout=position geometry (CPU-heavy). Paint=pixels. Composite=GPU layers. Verify CSS blocking via Chrome Performance tab. Dynamic CSS injection triggers Reflow, not initial render-block. Layout thrashing = read+write loops = 100x slower. Batch reads, then writes.
+</div>
+</section>
+
+<!-- ===== SECTION 2: LANGUAGE GAP ===== -->
+<section id="language-gap">
+<div class="section-tag">Section 2 · The Language Gap</div>
+<h1><span class="section-number" style="background:rgba(59,130,246,0.2);color:var(--ts);">2</span>TypeScript → JavaScript: The Translation Layer</h1>
+
+<h2>The Full History — Why Did We Even Need All This?</h2>
+
+<div class="evo-tree">
+<span class="root">History of JavaScript (The Long Road to Sanity)</span>
+ │
+ ├── <span class="note">1994 — Web pages are static HTML. No interactivity.</span>
+ │
+ ├── <span class="solution">1995 — Brendan Eich writes JavaScript in 10 DAYS at Netscape</span>
+ │    └── <span class="note">Yes. 10 days. This haunts us to this day.</span>
+ │
+ ├── <span class="problem">1999–2009 — The Dark Ages</span>
+ │    ├── <span class="note">IE6 dominates market. Has its own broken JS engine.</span>
+ │    ├── <span class="note">Firefox has different behavior. Safari has another.</span>
+ │    ├── <span class="note">Developers write if-else blocks for every browser.</span>
+ │    ├── <span class="note">jQuery invented (2006) to abstract browser differences.</span>
+ │    └── <span class="note">Flash/ActionScript fills gaps JS can't handle.</span>
+ │
+ ├── <span class="solution">ES5 — 2009 (First major standard)</span>
+ │    ├── <span class="note">Array.map/filter/reduce, strict mode, JSON support</span>
+ │    └── <span class="note">Still no classes, no modules, no arrow functions</span>
+ │
+ ├── <span class="problem">2010–2014 — Apps Get Complex</span>
+ │    ├── <span class="note">Gmail, Google Maps — complex apps need organization</span>
+ │    ├── <span class="note">Node.js (2009) brings JS to servers → CommonJS require()</span>
+ │    ├── <span class="note">AMD (RequireJS) for browser modules — define([deps], fn)</span>
+ │    ├── <span class="note">Grunt/Gulp task runners appear to manage complexity</span>
+ │    └── <span class="problem">No native modules in browser JS yet. Everything is global.</span>
+ │
+ ├── <span class="solution">ES6/ES2015 — The BIG BANG (took 6 years to standardize)</span>
+ │    ├── <span class="note">Classes, arrow functions, let/const, template literals</span>
+ │    ├── <span class="note">Promises, Symbols, Generators, Iterators</span>
+ │    ├── <span class="note">ES Modules (import/export) — static, tree-shakeable</span>
+ │    ├── <span class="note">Destructuring, default params, spread/rest</span>
+ │    └── <span class="problem">Problem: IE11 (20% market share in 2015) understands NONE of this</span>
+ │
+ ├── <span class="solution">Babel — 2014 (6to5, renamed Babel 2015)</span>
+ │    ├── <span class="note">ES6+ → ES5. Write future JS, ship past JS.</span>
+ │    └── <span class="note">Polyfills fill runtime gaps (Array.from, Promise, etc.)</span>
+ │
+ ├── <span class="solution">TypeScript — 2012 (Microsoft, public 2013)</span>
+ │    ├── <span class="note">Static types, interfaces, decorators, enums</span>
+ │    └── <span class="note">tsc compiles .ts → .js (type-safe JS)</span>
+ │
+ ├── <span class="solution">ES2016–ES2023 — Annual releases (small additions)</span>
+ │    ├── <span class="note">async/await (ES2017), optional chaining (?.) (ES2020)</span>
+ │    ├── <span class="note">Nullish coalescing (??), logical assignment (&&=)</span>
+ │    └── <span class="note">Array.at(), Object.hasOwn(), top-level await</span>
+ │
+ └── <span class="solution">ESNext — "What's coming next"</span>
+      ├── <span class="note">TC39 committee proposals: Stage 0 → Stage 4</span>
+      ├── <span class="note">Stage 4 = in the spec. Stage 3 = stable, Babel can transpile.</span>
+      └── <span class="note">Decorators (Stage 3), Records & Tuples, Pattern Matching</span>
+</div>
+
+<h2>Why Do We Need ESNext? Can't We Just Wait? — The Full Story</h2>
+
+<div class="story-box">
+  <div class="story-label">📖 The Most Mind-Blowing Story in JavaScript History</div>
+  <p>Picture this: it's 1995. A 28-year-old named Brendan Eich is hired by Netscape. His manager walks up on his first week and says: <em>"We need a scripting language for the browser. You have ten days."</em> Ten. Days. That's not even enough time to properly plan a bathroom renovation.</p>
+  <p>Brendan builds JavaScript in those ten days. It borrows syntax from Java (which was trendy), functions from Scheme (a Lisp dialect), and object prototypes from Self (an obscure research language). It ships in Netscape Navigator 2.0. The world changes forever.</p>
+  <p><strong>The problem?</strong> A language designed in ten days to make buttons blink on 1995 Netscape pages is now — in 2024 — running the world's most complex financial systems, AI interfaces, and real-time collaboration tools. Nobody planned for this. The language grew up carrying its 10-day skeleton inside it.</p>
+  <p>For 14 years after that (1995–2009), JavaScript sat essentially frozen. Microsoft and Netscape fought over the browser market. Nobody could agree on standards. IE6 shipped its own broken JS engine. Developers had to write the same code three different ways for three different browsers. jQuery became famous not because it was clever — but because it <em>hid the fact that browsers couldn't agree on how a mouse click worked</em>.</p>
+  <p><strong>The 2009 awakening:</strong> ES5 arrives. <span class="inline-code">Array.map()</span>, <span class="inline-code">JSON.parse()</span>, strict mode. Modest improvements. But still no classes. No modules. No promises. No arrow functions. Developers are writing callback pyramids 8 levels deep to handle async data.</p>
+  <p><strong>The six years of darkness:</strong> TC39 (the committee with representatives from Google, Mozilla, Microsoft, Apple) begins drafting ES6. It takes six years because every feature requires consensus from competing browser vendors who each have incentives to delay their competitors' favorite features. "Harmony" is the code name. The irony is not lost on anyone.</p>
+  <p><strong>2015 — The Big Bang:</strong> ES6 drops. Six years of work in one release. Arrow functions, classes, template literals, destructuring, spread operators, modules, Promises, generators, Maps, Sets, Symbols. The JavaScript world erupts. It's like a developer civilization that had been living in stone tools suddenly received a complete industrial revolution in one shipment.</p>
+  <p><strong>The IE11 tragedy:</strong> But 20% of the web's users are still on Internet Explorer 11. A browser Microsoft would not kill until 2022. IE11 understands zero percent of ES6. All that beautiful new code: syntax error. Zero. Nothing. Dead on arrival in IE11.</p>
+  <p><strong>Babel is the hero:</strong> A developer named Sebastian McKenzie builds Babel in 2014 (originally called 6to5 — "ES6 to ES5"). He's 17 years old. A teenager writes the tool that saves the entire JavaScript industry from a compatibility crisis. Babel lets developers write ES6 and transforms it to ES5 that works in IE11. The world exhales.</p>
+  <p><strong>The annual release rhythm:</strong> After 2015, TC39 switches to annual small releases: ES2016, ES2017, ES2018... Features are proposed, debated, implemented in browsers, and released on a calendar — not batched into six-year mega-releases. This prevents another "lost decade."</p>
+  <p><strong>ESNext — the perpetual horizon:</strong> ESNext isn't a version number. It's a name for "whatever is coming next." TC39's Stage 3 proposals are stable enough that Babel plugins implement them, Angular and React use them, and you can write them in your code today — years before any browser ships them natively. Decorators were Stage 3 for years. Angular used TypeScript's experimental decorator implementation that entire time. The spec finally settled in 2023.</p>
+  <p><strong>The beautiful irony of the whole story:</strong> A language written in 10 days to make web pages slightly interactive now powers spacecraft telemetry, heart rate monitors, real-time surgical robots, and AI chat interfaces. And its evolution — from 10-day sketch to carefully curated annual releases — is one of the most extraordinary stories of collaborative engineering in technology history.</p>
+</div>
+
+<div class="card accent">
+  <div class="card-label">🗓️ The TC39 Committee — How JS Features Are Born</div>
+  <p>TC39 is the committee of browser vendors (Google, Mozilla, Microsoft, Apple, Igalia) that defines the JavaScript spec. Features go through 5 stages:</p>
+  <div class="grid-2">
+    <div>
+      <ul style="font-size:13px;">
+        <li><strong>Stage 0</strong> — Someone had an idea. Strawperson.</li>
+        <li><strong>Stage 1</strong> — Formally proposed. TC39 reviewing.</li>
+        <li><strong>Stage 2</strong> — Spec drafted. May change.</li>
+        <li><strong>Stage 3</strong> — Spec complete. Browsers implementing.</li>
+        <li><strong>Stage 4</strong> — In the spec. Browsers ship it.</li>
+      </ul>
+    </div>
+    <div>
+      <p style="font-size:13px;">Decorators took <strong>10+ years</strong> from proposal to Stage 3. Angular used TypeScript's experimental decorators the entire time.</p>
+      <p style="font-size:13px;">ESNext tooling (Babel plugins) lets you use Stage 3 features TODAY, before any browser ships them. You don't wait 2 years for browser adoption.</p>
+    </div>
+  </div>
+</div>
+
+<div class="hooks-grid">
+  <div class="hook-card">
+    <div class="emoji">⏱️</div>
+    <div class="hook-title">10 Days</div>
+    <p>Time it took Brendan Eich to create JavaScript. The original sin of web development. All our tooling exists to compensate for this founding constraint.</p>
+  </div>
+  <div class="hook-card">
+    <div class="emoji">👦</div>
+    <div class="hook-title">Age 17</div>
+    <p>Sebastian McKenzie's age when he wrote Babel — the tool that saved the JS ecosystem from the IE11 compatibility disaster. A teenager. One tool. Billions of websites.</p>
+  </div>
+  <div class="hook-card">
+    <div class="emoji">📅</div>
+    <div class="hook-title">2022</div>
+    <p>The year Microsoft finally killed IE11 — 27 years after JavaScript was born. We spent 27 years writing polyfills and transpilers to support one browser.</p>
+  </div>
+</div>
+
+<h2>The Compiler "Missing the Helmet" — Real Browser Accidents</h2>
+
+<div class="story-box">
+  <div class="story-label">💥 Real Accident: When the Compiler Doesn't Catch It</div>
+  <p><strong>Scenario 1 — The <span class="inline-code">typeof</span> Null Bug (pre-ES6, still in JS spec):</strong></p>
+  <pre><span class="cmt">// typeof null === 'object'  ← This is a 25-year-old bug in JS</span>
+<span class="cmt">// TypeScript CANNOT catch this because it's valid JS behavior</span>
+<span class="kw">const</span> user = <span class="fn">getUser</span>(); <span class="cmt">// Returns null if not logged in</span>
+<span class="kw">if</span> (<span class="kw">typeof</span> user === <span class="str">'object'</span>) {
+  user.profile.name; <span class="cmt">// 💥 CRASH: Cannot read 'profile' of null</span>
+}
+<span class="cmt">// TS with strict null checks WOULD catch this:</span>
+<span class="cmt">// Error: Object is possibly null</span>
+<span class="cmt">// But only if --strictNullChecks is enabled in tsconfig.json!</span></pre>
+  <p><strong>Scenario 2 — The <span class="inline-code">parseInt</span> Radix Accident:</strong></p>
+  <pre><span class="cmt">// parseInt('08') in old browsers = 0 (treated as octal!)</span>
+<span class="cmt">// parseInt('08', 10) = 8 (correct, with explicit radix)</span>
+<span class="cmt">// TypeScript doesn't warn you about missing radix without ESLint rules</span>
+<span class="cmt">// Babel transpiles this to ES5 without changing the behavior</span>
+<span class="cmt">// Result: Bug ships to production silently. Cart total shows $0 instead of $8.</span></pre>
+  <p><strong>Scenario 3 — The Prototype Pollution (runtime, no compiler can stop this):</strong></p>
+  <pre><span class="cmt">// Attacker sends: {"__proto__":{"isAdmin":true}} in API request</span>
+<span class="cmt">// If code does: Object.assign({}, userInput)</span>
+<span class="cmt">// Every object in the app now has isAdmin:true</span>
+<span class="cmt">// TypeScript compiles fine. Babel compiles fine. App is compromised.</span>
+<span class="cmt">// The helmet was fitted. The accident happened at runtime anyway.</span></pre>
+</div>
+
+<div class="card red">
+  <div class="card-label">🚨 What TypeScript CANNOT Catch (Helmet Has Gaps)</div>
+  <ul style="font-size:13.5px;">
+    <li><strong>Runtime values</strong> — TypeScript trusts your <span class="inline-code">as Type</span> casts. Cast wrong = runtime crash.</li>
+    <li><strong>Third-party API shapes</strong> — API returns different shape than your types declare. No TS error. Runtime crash.</li>
+    <li><strong>DOM side effects</strong> — <span class="inline-code">document.getElementById('missing')</span> returns <span class="inline-code">null</span>. TS warns but only if <span class="inline-code">strict</span> mode is on.</li>
+    <li><strong>Index out of bounds</strong> — <span class="inline-code">array[5]</span> when array has 3 items. TS says <span class="inline-code">T | undefined</span> only in <span class="inline-code">noUncheckedIndexedAccess</span> mode.</li>
+    <li><strong>Async race conditions</strong> — Two concurrent fetches overwriting the same state. Perfectly valid TypeScript. Production disaster.</li>
+  </ul>
+  <p><strong>The helmet analogy extended:</strong> TypeScript is a helmet — it prevents head injuries (type mismatches). But you can still break your wrist (runtime null), catch fire (security vulnerabilities), or trip on ice (async race conditions). Helmets are essential. They are not everything.</p>
+</div>
+
+<h2>tsc vs esbuild — Why One Is Written in Go</h2>
+
+<div class="grid-2">
+  <div class="card purple">
+    <div class="card-label">🔵 tsc — TypeScript's Own Compiler</div>
+    <p><strong>Written in: TypeScript/JavaScript</strong></p>
+    <ul style="font-size:13px;">
+      <li>Runs on Node.js (a JS runtime)</li>
+      <li>Must bootstrap: Node.js starts → loads tsc.js → tsc reads your .ts files → outputs .js</li>
+      <li>Full type checking pass (analyzes entire program graph)</li>
+      <li>On a 1000-file project: <strong>10–30 seconds</strong></li>
+      <li>Cannot bundle (only transpiles)</li>
+      <li>The authoritative source — Microsoft defines TypeScript</li>
+    </ul>
+  </div>
+  <div class="card green">
+    <div class="card-label">⚡ esbuild — The Go-Powered Rocket</div>
+    <p><strong>Written in: Go</strong></p>
+    <ul style="font-size:13px;">
+      <li>Compiled to native binary — no runtime startup cost</li>
+      <li>Runs multi-threaded (Go goroutines)</li>
+      <li>Transpiles + bundles in one pass</li>
+      <li>On the same 1000-file project: <strong>0.1–0.3 seconds</strong> (100x faster)</li>
+      <li>Does NOT type-check (strips types without validating them)</li>
+      <li>Used by: Vite (dev server), Angular CLI 17+ (dev builds)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card accent">
+  <div class="card-label">🚀 Why Go Makes esbuild 100x Faster — The Real Reason</div>
+  <p><strong>Language choice matters enormously for CPU-bound tools:</strong></p>
+  <div class="evo-tree" style="margin:10px 0;">
+<span class="root">Node.js / tsc</span>
+ ├── <span class="problem">JavaScript is single-threaded (event loop)</span>
+ ├── <span class="problem">JIT-compiled — first run is interpreted, speeds up over time</span>
+ ├── <span class="problem">Garbage collector pauses execution unpredictably</span>
+ ├── <span class="problem">V8 engine startup overhead on each CLI invocation</span>
+ └── <span class="problem">No true parallelism for CPU work (Worker threads help but limited)</span>
+
+<span class="root">Go / esbuild</span>
+ ├── <span class="solution">Compiled to native machine code — runs at CPU speed</span>
+ ├── <span class="solution">True parallelism via goroutines — all CPU cores utilized</span>
+ ├── <span class="solution">Minimal GC pauses — low-latency allocator</span>
+ ├── <span class="solution">No runtime startup — binary launches and runs immediately</span>
+ └── <span class="solution">Cache-friendly data structures — designed for parsing performance</span>
+  </div>
+  <p>Evan Wallace (esbuild author) specifically chose Go over Rust because Go's goroutines made parallel parsing simpler to implement. The result: parsing 10 files in parallel vs parsing 1 file at a time.</p>
+  <p><strong>The trade-off:</strong> esbuild skips type checking entirely. Common production setup in React projects:</p>
+  <pre><span class="cmt">// package.json scripts:</span>
+{
+  <span class="str">"build"</span>: <span class="str">"tsc --noEmit && vite build"</span>
+<span class="cmt">}
+<span class="cmt">// tsc --noEmit = type-check ONLY (no files generated)</span>
+<span class="cmt">// vite build = esbuild for speed (no type checking)</span>
+<span class="cmt">// Together: type safety + build speed ✓</span></pre>
+</div>
+
+<div class="recall-box">
+  <div class="recall-label">⚡ Recall Trigger</div>
+  <strong>tsc = careful French translator</strong> — reads every word, checks grammar, produces clean output. Slow. <strong>esbuild = Google Translate on steroids</strong> — instant, no grammar checking, sometimes produces odd phrasing (no type errors). <strong>Use both</strong>: tsc for safety check, esbuild for speed.
+</div>
+
+<div class="recap-box">
+  <div class="recap-label">⏱ 30-Second Revision</div>
+  1995: JS written in 10 days. IE wars → jQuery. 2009: ES5 first real standard. 2015: ES6 changes everything (classes, modules, promises). IE11 can't run any of it → Babel born. TypeScript 2013 → adds types on top. tsc = type-check + transpile (slow, JS-based). esbuild = transpile only (Go binary, 100x faster, no type check). ESNext = Stage 0-4 proposals. Babel plugins let you use Stage 3 features today.
+</div>
+</section>
+
+<!-- ===== SECTION 3: BUILD PIPELINE ===== -->
+<section id="build-pipeline">
+<div class="section-tag">Section 3 · Build Pipeline</div>
+<h1><span class="section-number" style="background:rgba(247,201,75,0.2);color:var(--accent3);">3</span>What Happens Before Production</h1>
+
+<h2>Bundling — The Full History</h2>
+
+<div class="evo-tree">
+<span class="root">History of Bundling</span>
+ │
+ ├── <span class="note">2000s — No modules. All JS in one file. globals pollute window.</span>
+ │    └── <span class="problem">&lt;script src="jquery.js"&gt;&lt;script src="app.js"&gt; — ORDER MATTERS!</span>
+ │
+ ├── <span class="note">2009 — Node.js ships with CommonJS (require/module.exports)</span>
+ │    └── <span class="note">Works for server. Browsers still have no module system.</span>
+ │
+ ├── <span class="note">2011 — RequireJS (AMD) — first browser module loader</span>
+ │    ├── <span class="note">define(['jquery'], function($) { ... })</span>
+ │    └── <span class="problem">Complex syntax. Runtime module loading (slow).</span>
+ │
+ ├── <span class="solution">2012 — Browserify — first true bundler</span>
+ │    └── <span class="note">CommonJS require() in browser! Bundles all to one file.</span>
+ │
+ ├── <span class="solution">2012/2014 — Grunt → Gulp (task runners, not bundlers)</span>
+ │    └── <span class="note">Run tasks: compile SASS, lint JS, run tests. Not module-aware.</span>
+ │
+ ├── <span class="solution">2014 — Webpack 1 (game changer)</span>
+ │    ├── <span class="note">Module bundler that understands CommonJS + AMD</span>
+ │    ├── <span class="note">Loaders for CSS, images, fonts in JS</span>
+ │    ├── <span class="note">Code splitting (first time!)</span>
+ │    └── <span class="problem">Configuration nightmare. Slow on large projects.</span>
+ │
+ ├── <span class="solution">2015 — ES Modules (import/export) in ES6 spec</span>
+ │    └── <span class="note">Static analysis possible → tree shaking born</span>
+ │
+ ├── <span class="solution">2017 — Rollup (pioneer of tree shaking)</span>
+ │    └── <span class="note">ES module-first. Tiny outputs. Libraries love it.</span>
+ │
+ ├── <span class="solution">2020 — esbuild (Go-powered, 100x faster)</span>
+ │
+ ├── <span class="solution">2021 — Vite (Evan You, Vue creator)</span>
+ │    ├── <span class="note">Dev: esbuild for instant HMR (Hot Module Replacement)</span>
+ │    ├── <span class="note">Prod: Rollup for optimal tree-shaking</span>
+ │    └── <span class="note">Leverages browser native ES modules in dev — no bundling!</span>
+ │
+ └── <span class="solution">Now — Turbopack (Rust), Rspack (Rust clone of Webpack)</span>
+      └── <span class="note">The Rust era: same concept, compiled native, 10-100x faster</span>
+</div>
+
+<h2>CommonJS vs ES Modules — The Fundamental Divide</h2>
+
+<div class="code-compare">
+  <div class="code-side">
+    <span class="code-side-label before-label">CommonJS (Node.js, 2009)</span>
+    <pre><span class="cmt">// Synchronous. Dynamic. Runtime.</span>
+<span class="kw">const</span> _ = <span class="fn">require</span>(<span class="str">'lodash'</span>);
+<span class="kw">const</span> utils = <span class="fn">require</span>(<span class="str">'./'</span> + folder + <span class="str">'/utils'</span>);
+<span class="cmt">// ↑ folder is a variable! Bundler can't know this at build time.</span>
+
+module.exports = { add, subtract };
+
+<span class="cmt">// Problems:</span>
+<span class="cmt">// 1. require() can be called ANYWHERE (inside if, loops)</span>
+<span class="cmt">// 2. Dynamic path = bundler must include EVERYTHING</span>
+<span class="cmt">// 3. Circular dependencies resolved at runtime = order bugs</span>
+<span class="cmt">// 4. No tree shaking possible</span></pre>
+  </div>
+  <div class="code-side">
+    <span class="code-side-label after-label">ES Modules (ES6, 2015)</span>
+    <pre><span class="cmt">// Static. Declarative. Parse-time.</span>
+<span class="kw">import</span> { debounce } <span class="kw">from</span> <span class="str">'lodash-es'</span>;
+<span class="cmt">// ↑ Must be at TOP LEVEL. No variables in path.</span>
+
+<span class="kw">export const</span> <span class="fn">add</span> = (a, b) => a + b;
+<span class="kw">export const</span> <span class="fn">subtract</span> = (a, b) => a - b;
+
+<span class="cmt">// Advantages:</span>
+<span class="cmt">// 1. import must be top-level → statically analyzable</span>
+<span class="cmt">// 2. Bundler knows EXACTLY what's used at build time</span>
+<span class="cmt">// 3. Circular deps detected and ordered correctly</span>
+<span class="cmt">// 4. Full tree shaking. Unused exports eliminated.</span>
+<span class="cmt">// 5. Browsers understand natively (no bundler needed in dev!)</span></pre>
+  </div>
+</div>
+
+<div class="card accent">
+  <div class="card-label">🔍 Can You See The Code Tree In Real Time? (Yes!)</div>
+  <p>You can visualize exactly which modules are in your bundle and how large they are using <strong>Bundle Analyzers</strong>:</p>
+  <div class="grid-2">
+    <div>
+      <h3 style="margin-top:0;font-size:14px;">webpack-bundle-analyzer</h3>
+      <pre style="font-size:11.5px;"><span class="cmt">npm install webpack-bundle-analyzer</span>
+<span class="cmt"># In CRA: GENERATE_SOURCEMAP=true npm run build</span>
+<span class="cmt"># Then: npx webpack-bundle-analyzer build/static/js/*.js</span>
+<span class="cmt"># Opens interactive treemap in browser</span>
+<span class="cmt"># Every box = a module. Size = its bytes.</span>
+<span class="cmt"># Hover to see exact file path</span></pre>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:14px;">Vite's rollup-plugin-visualizer</h3>
+      <pre style="font-size:11.5px;"><span class="cmt">npm install rollup-plugin-visualizer</span>
+<span class="cmt"># vite.config.ts:</span>
+<span class="kw">import</span> { visualizer } <span class="kw">from</span> <span class="str">'rollup-plugin-visualizer'</span>
+plugins: [visualizer({ open: <span class="kw">true</span> })]
+<span class="cmt"># npm run build → opens stats.html</span>
+<span class="cmt"># Interactive sunburst chart of your entire bundle</span></pre>
+    </div>
+  </div>
+  <p>Angular has: <span class="inline-code">ng build --stats-json</span> → generates <span class="inline-code">stats.json</span> → feed to <span class="inline-code">webpack-bundle-analyzer</span>. This is how you discover: "Wait, why is moment.js 200KB in my bundle? I used it in ONE file from TWO YEARS AGO."</p>
+</div>
+
+<h2>What If You Don't Want Tree Shaking?</h2>
+
+<div class="card amber">
+  <div class="card-label">🛑 When You Deliberately Skip Tree Shaking</div>
+  <p>You may need to keep "dead code" in the bundle for legitimate reasons:</p>
+  <ul style="font-size:13.5px;">
+    <li><strong>Polyfills</strong> — need to ship even if not directly imported (e.g., <span class="inline-code">es6-promise</span> patches the global <span class="inline-code">Promise</span>). Webpack's <span class="inline-code">sideEffects: false</span> setting in <span class="inline-code">package.json</span> would remove these.</li>
+    <li><strong>CSS-in-JS global styles</strong> — a <span class="inline-code">import './global.css'</span> has no export — tree shaker might cut it.</li>
+    <li><strong>Analytics/monitoring</strong> — SDKs that auto-initialize via import side effects.</li>
+    <li><strong>Dynamic plugin systems</strong> — you register modules at runtime; you need them all bundled even if not statically imported.</li>
+  </ul>
+  <p><strong>How to disable tree shaking per-file:</strong></p>
+  <pre><span class="cmt">// In package.json of the library:</span>
+{
+  <span class="str">"sideEffects"</span>: <span class="kw">false</span>  <span class="cmt">// All files are tree-shakeable</span>
+}
+<span class="cmt">// OR protect specific files:</span>
+{
+  <span class="str">"sideEffects"</span>: [<span class="str">"*.css"</span>, <span class="str">"./src/polyfills.js"</span>]
+}
+
+<span class="cmt">// In webpack.config.js — disable globally:</span>
+optimization: { usedExports: <span class="kw">false</span> } <span class="cmt">// no tree shaking at all</span>
+
+<span class="cmt">// In vite.config.ts:</span>
+build: { rollupOptions: { treeshake: <span class="kw">false</span> } }</pre>
+  <p><strong>The downside of no tree shaking:</strong> In a typical React app, lodash alone adds 70KB. React-icons unshaken adds 3MB. MomentJS adds 300KB. Your 50KB app becomes a 2MB bundle.</p>
+</div>
+
+<h2>Minification vs Name Mangling — They Are Different Things</h2>
+
+<div class="card">
+  <div class="card-label" style="color:var(--accent5);">🔬 Three Separate Compression Techniques</div>
+  <div class="grid-3">
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--accent3);">1. Whitespace Removal</h3>
+      <pre style="font-size:11px;"><span class="cmt">// Before:</span>
+<span class="kw">function</span> add(a, b) {
+  <span class="kw">return</span> a + b;
+}
+
+<span class="cmt">// After:</span>
+<span class="kw">function</span> add(a,b){<span class="kw">return</span> a+b;}</span>
+<span class="cmt">// Saves spaces, tabs, newlines</span></pre>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--accent3);">2. Name Mangling</h3>
+      <pre style="font-size:11px;"><span class="cmt">// Before:</span>
+<span class="kw">function</span> calculateUserTax(grossIncome) {
+  <span class="kw">const</span> taxAmount = grossIncome * <span class="num">0.2</span>;
+  <span class="kw">return</span> taxAmount;
+}
+
+<span class="cmt">// After mangling:</span>
+<span class="kw">function</span> a(b){<span class="kw">const</span> c=b*<span class="num">.2</span>;<span class="kw">return</span> c}</span>
+<span class="cmt">// Long names → single chars</span></pre>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--accent3);">3. Dead Code / Constant Folding</h3>
+      <pre style="font-size:11px;"><span class="cmt">// Before:</span>
+<span class="kw">const</span> DEBUG = <span class="kw">false</span>;
+<span class="kw">if</span> (DEBUG) {
+  console.<span class="fn">log</span>(<span class="str">'debug info'</span>);
+}
+
+<span class="cmt">// After: entire if block removed</span>
+<span class="cmt">// Constant folding: false → delete</span>
+<span class="cmt">// Minifier knows it never runs</span></pre>
+    </div>
+  </div>
+  <p><strong>Name mangling is the riskiest.</strong> If your code relies on <span class="inline-code">function.name</span> (e.g., Angular's DI uses class names for lookup), aggressive mangling breaks it. Angular's Ivy compiler generates explicit identifiers to be mangling-safe.</p>
+</div>
+
+<div class="card green">
+  <div class="card-label">🛠️ Tools Deep Dive</div>
+  <div class="grid-3">
+    <div>
+      <h3 style="margin-top:0;font-size:13px;color:var(--accent2);">Terser (for JS)</h3>
+      <p style="font-size:12.5px;">The standard JS minifier. Successor to UglifyJS. Handles ES2020+. Does whitespace removal + mangling + constant folding + dead code. Webpack uses it via <span class="inline-code">TerserPlugin</span>. Configurable: you can enable/disable mangling per-scope.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:13px;color:var(--accent2);">cssnano (for CSS)</h3>
+      <p style="font-size:12.5px;">PostCSS-based CSS minifier. Removes whitespace, comments, duplicate rules. Shortens colors (<span class="inline-code">#ffffff</span> → <span class="inline-code">#fff</span>). Merges identical media queries. Removes vendor prefixes if browserslist says you don't need them.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:13px;color:var(--accent2);">html-minifier-terser</h3>
+      <p style="font-size:12.5px;">Strips whitespace between HTML tags, removes comments, collapses boolean attributes (<span class="inline-code">disabled="disabled"</span> → <span class="inline-code">disabled</span>). Angular's build inlines critical CSS into <span class="inline-code">index.html</span> and minifies the result.</p>
+    </div>
+  </div>
+</div>
+
+<h2>Source Maps in AOT vs JIT</h2>
+
+<div class="grid-2">
+  <div class="card red">
+    <div class="card-label">JIT — Source Maps Point to Compiled JS</div>
+    <p>In JIT mode, Angular compiles templates in the browser. Source maps connect minified bundle JS → pre-minification JS. But the template compilation happens at runtime — there are no source maps from compiled template code back to your original HTML template.</p>
+    <p><strong>Debugging experience:</strong> You can trace component class methods fine. Template errors show cryptic generated code lines.</p>
+  </div>
+  <div class="card green">
+    <div class="card-label">AOT — Source Maps Go All the Way Back to TypeScript</div>
+    <p>AOT compiles templates at build time. Source maps chain: minified bundle.js → generated JS → original TypeScript. Angular CLI generates source maps by default in dev. In prod, use <span class="inline-code">sourceMap: true</span> in <span class="inline-code">angular.json</span>.</p>
+    <p><strong>Debugging experience:</strong> DevTools shows original <span class="inline-code">.ts</span> files. Click an error → jump to TypeScript line. Full fidelity. AOT is used in both dev (Angular 9+/Ivy) and production.</p>
+  </div>
+</div>
+
+<div class="alert-box">
+  <div class="alert-label">🗂️ Which Files Configure Your "Helmet"?</div>
+  <p>The TypeScript "helmet" (type safety) is controlled by configuration files — not your code. The wrong setting in these files means the helmet isn't strapped on:</p>
+  <ul style="font-size:13.5px;">
+    <li><span class="file-badge">tsconfig.json</span> — <span class="inline-code">"strict": true</span> enables the helmet. Without it: no null checks, any-type allowed, type holes everywhere.</li>
+    <li><span class="file-badge">.babelrc / babel.config.js</span> — controls which ES features to strip. <span class="inline-code">@babel/preset-typescript</span> strips types with zero type checking (no helmet at all!).</li>
+    <li><span class="file-badge">tsconfig.json</span> — <span class="inline-code">"target": "ES5"</span> → compile to ES5. <span class="inline-code">"target": "ES2020"</span> → keep modern syntax (rely on modern browsers).</li>
+    <li><span class="file-badge">.browserslistrc</span> — tells Babel/PostCSS which browsers to support. Determines which polyfills are added and what ES level to target.</li>
+  </ul>
+</div>
+
+<div class="recap-box">
+  <div class="recap-label">⏱ 30-Second Revision</div>
+  Bundling started 2009 (Browserify), Webpack 2014 made it powerful, Vite 2021 made it fast. CJS = runtime require() = no tree shaking. ESM = static import = tree shaking works. Use bundle analyzer to see your code tree visually. Minification ≠ mangling — both happen in Terser. Disable tree shaking via <span class="inline-code">sideEffects</span> field. Source maps in AOT = full TS traceability. tsconfig.json + .babelrc = your helmet configuration files.
+</div>
+</section>
+
+<!-- ===== SECTION 4: DI ===== -->
+<section id="di">
+<div class="section-tag">Section 4 · Architecture</div>
+<h1><span class="section-number" style="background:rgba(80,200,160,0.2);color:var(--accent2);">4</span>Dependency Injection — Beauty, Pool & Manager</h1>
+
+<div class="card accent">
+  <div class="card-label">📸 The Pizza Chef Recap</div>
+  <p><strong>Without DI</strong> = Chef drives to farm, milks cow, grows tomatoes. <strong>With DI</strong> = Chef declares needs, kitchen manager delivers. Chef just cooks. The <strong>Injector</strong> is the kitchen manager.</p>
+</div>
+
+<div class="code-compare">
+  <div class="code-side">
+    <span class="code-side-label before-label">Without DI (tight coupling)</span>
+    <pre><span class="kw">class</span> <span class="type">OrderService</span> {
+  <span class="fn">constructor</span>() {
+    <span class="kw">this</span>.db = <span class="kw">new</span> <span class="fn">PostgresDatabase</span>();
+    <span class="kw">this</span>.mailer = <span class="kw">new</span> <span class="fn">SendGridEmailer</span>();
+  }
+}
+<span class="cmt">// Test = must hit real DB & send emails</span>
+<span class="cmt">// Swap DB? Rewrite OrderService.</span></pre>
+  </div>
+  <div class="code-side">
+    <span class="code-side-label after-label">With DI (loose coupling)</span>
+    <pre><span class="kw">class</span> <span class="type">OrderService</span> {
+  <span class="fn">constructor</span>(
+    <span class="kw">private</span> db: <span class="type">IDatabase</span>,
+    <span class="kw">private</span> mailer: <span class="type">IMailer</span>
+  ) {}
+}
+<span class="cmt">// Test = inject MockDatabase + MockMailer</span>
+<span class="cmt">// Swap DB? Change ONE config line.</span></pre>
+  </div>
+</div>
+
+<h2>Who Manages the DI? How? Why? — Angular's Injector Pool</h2>
+
+<div class="card green">
+  <div class="card-label">🏦 The Angular Injector — It's a Pool of Singletons</div>
+  <p>Angular's DI container works like a <strong>hotel concierge with a shared resource pool</strong>. The first guest to request "a car" gets one created. Every subsequent guest who requests "a car" gets the SAME car (singleton). The concierge never creates two cars for the same service.</p>
+  <pre><span class="cmt">// Who manages DI: The Angular Platform creates the Root Injector</span>
+<span class="cmt">// It lives in: @angular/core → ApplicationRef → EnvironmentInjector</span>
+
+<span class="cmt">// Three levels of injectors (hierarchical):</span>
+<span class="cmt">// 1. Root Injector (entire app lifetime)</span>
+<span class="kw">@Injectable</span>({ providedIn: <span class="str">'root'</span> })
+<span class="kw">class</span> <span class="type">AuthService</span> { } <span class="cmt">// ONE instance. Ever.</span>
+
+<span class="cmt">// 2. Module Injector (per lazy-loaded module)</span>
+<span class="kw">@NgModule</span>({ providers: [<span class="type">CartService</span>] })
+<span class="kw">class</span> <span class="type">CheckoutModule</span> { } <span class="cmt">// New instance per module load</span>
+
+<span class="cmt">// 3. Component Injector (per component instance)</span>
+<span class="kw">@Component</span>({ providers: [<span class="type">FormService</span>] })
+<span class="kw">class</span> <span class="type">RegistrationComponent</span> { } <span class="cmt">// New instance per component</span></pre>
+
+  <p>The pool works as a <strong>map: Token → Instance</strong>. Token is typically the class itself (its constructor function reference). When a component requests <span class="inline-code">UserService</span> in its constructor, Angular walks UP the injector tree:</p>
+  <pre><span class="cmt">// Angular's injection resolution process (simplified):</span>
+<span class="fn">resolve</span>(<span class="type">UserService</span>):
+  1. Check component injector → not found
+  2. Check parent component injector → not found
+  3. Check module injector → not found
+  4. Check root injector → FOUND! Return cached instance.
+
+<span class="cmt">// If never found: NullInjectorError: No provider for UserService</span>
+<span class="cmt">// This is the most common Angular DI error you'll see.</span></pre>
+</div>
+
+<div class="card amber">
+  <div class="card-label">🔑 Which Angular Module Manages UserService?</div>
+  <p>It depends on <span class="inline-code">providedIn</span>. The actual management is done by <span class="inline-code">@angular/core</span>'s <strong><span class="inline-code">R3Injector</span></strong> class (part of the Ivy runtime). Here's the lifecycle:</p>
+  <ul style="font-size:13.5px;">
+    <li>App bootstraps → <span class="inline-code">platformBrowserDynamic().bootstrapModule(AppModule)</span> creates the Root Injector</li>
+    <li>Root Injector scans all <span class="inline-code">providers</span> arrays + all <span class="inline-code">providedIn:'root'</span> services</li>
+    <li>Builds a <strong>provider registry</strong> (Map of token → factory function)</li>
+    <li>When first component requests <span class="inline-code">UserService</span>: runs factory → creates instance → caches it</li>
+    <li>When next component requests <span class="inline-code">UserService</span>: returns cached instance immediately</li>
+    <li>Instance lives until the injector is destroyed (for Root Injector: when app unmounts)</li>
+  </ul>
+  <p><strong>The pool memory model:</strong> Root Injector holds a <span class="inline-code">WeakMap&lt;Token, instance&gt;</span>. Services are not garbage-collected until the injector itself is destroyed. This is by design — services are meant to be long-lived.</p>
+</div>
+
+<div class="hooks-grid">
+  <div class="hook-card">
+    <div class="emoji">🏨</div>
+    <div class="hook-title">Memory Hook 1</div>
+    <p>Injector = hotel concierge. First request = create. Subsequent requests = same object. Pool = hotel's shared amenities.</p>
+  </div>
+  <div class="hook-card">
+    <div class="emoji">🌲</div>
+    <div class="hook-title">Memory Hook 2</div>
+    <p>Injectors form a tree like DOM nodes. Request bubbles UP the tree (child → parent → root) until found. NullInjectorError = reached the top without finding it.</p>
+  </div>
+  <div class="hook-card">
+    <div class="emoji">🧪</div>
+    <div class="hook-title">Memory Hook 3 — Testing</div>
+    <p>In tests: <span class="inline-code">TestBed.configureTestingModule({ providers: [{ provide: UserService, useClass: MockUserService }] })</span> — you replace real service with mock in the injector pool.</p>
+  </div>
+</div>
+
+<div class="recap-box">
+  <div class="recap-label">⏱ 30-Second Revision</div>
+  DI = declare needs, don't fetch them. Angular's Injector = hierarchical pool: Root → Module → Component. Pool = Map(Token → Instance). First request creates. Subsequent requests reuse (singleton by default). <span class="inline-code">R3Injector</span> (Ivy runtime) manages the pool. <span class="inline-code">NullInjectorError</span> = not registered. Tests: swap real for mock via TestBed providers.
+</div>
+</section>
+
+<!-- ===== SECTION 5: ANGULAR ===== -->
+<section id="angular">
+<div class="section-tag">Section 5 · Framework Deep-Dive</div>
+<h1><span class="section-number" style="background:rgba(221,0,49,0.2);color:var(--angular);">5</span>Angular — The Opinionated Enterprise Machine</h1>
+
+<div class="card red">
+  <div class="card-label">📸 Snapshot — The Boeing 747</div>
+  <p>Angular is fully assembled — compiler, DI, routing, forms, HTTP client, state management patterns. Complex to master. Once in the air, every Angular pilot knows every button. Google maintains it. One company, one vision, one way.</p>
+</div>
+
+<h2>AOT vs tsc — Are They the Same Thing?</h2>
+
+<div class="alert-box">
+  <div class="alert-label">💡 Critical Distinction — People Confuse These</div>
+  <p>AOT (Ahead-of-Time) and tsc are <strong>completely different concepts</strong> that happen to both produce JavaScript:</p>
+  <div class="grid-2">
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--ts);">tsc (TypeScript Compiler)</h3>
+      <ul style="font-size:13px;">
+        <li>Strips TypeScript types</li>
+        <li>Converts TS syntax → JS syntax</li>
+        <li>Targets a specific ES version</li>
+        <li>Knows nothing about Angular</li>
+        <li>Works for any TypeScript project (Node, React, Angular)</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--angular);">AOT / ngc (Angular Compiler)</h3>
+      <ul style="font-size:13px;">
+        <li>Reads Angular-specific decorators (@Component, @Directive)</li>
+        <li>Compiles HTML templates into TypeScript/JS functions</li>
+        <li>Validates template bindings against component types</li>
+        <li>Generates factory functions and view definitions</li>
+        <li>Only works for Angular. Runs BEFORE tsc in the pipeline.</li>
+      </ul>
+    </div>
+  </div>
+  <p><strong>The pipeline order:</strong> <span class="inline-code">ngc (AOT compiler)</span> → outputs TS → <span class="inline-code">tsc</span> → outputs JS → <span class="inline-code">Webpack/esbuild</span> bundles JS. Or with Ivy: ngc and tsc are integrated into one step.</p>
+</div>
+
+<h2>ngc vs Ivy — The Angular Compiler Evolution</h2>
+
+<div class="evo-tree">
+<span class="root">Angular Compiler History</span>
+ │
+ ├── <span class="solution">Angular 2–8 — ViewEngine + ngc (external compiler)</span>
+ │    ├── <span class="note">ngc = Angular's version of tsc. Run before tsc.</span>
+ │    ├── <span class="note">Compiles templates → NgFactory files (extra .ts files)</span>
+ │    ├── <span class="problem">Problem: Large bundles (factories bloated)</span>
+ │    └── <span class="problem">Problem: Slow compilation. Hard to debug.</span>
+ │
+ └── <span class="solution">Angular 9+ — Ivy (integrated, incremental compiler)</span>
+      ├── <span class="note">Ivy is embedded INTO the TypeScript compiler (a ts transform)</span>
+      ├── <span class="note">No separate ngc step. One tsc run handles everything.</span>
+      ├── <span class="note">Templates compiled to "instructions" (imperative code)</span>
+      ├── <span class="note">AOT is now default in BOTH dev AND prod</span>
+      ├── <span class="note">Incremental compilation — only recompile changed files</span>
+      └── <span class="solution">Locality: each component compiled independently → faster builds</span>
+</div>
+
+<h2>Dev Mode vs Production — How Many Files?</h2>
+
+<div class="grid-2">
+  <div class="card red">
+    <div class="card-label">Angular — Dev Mode (ng serve)</div>
+    <p>In dev, files are served individually via the dev server — <strong>not bundled</strong> into single files. The browser receives many requests:</p>
+    <pre style="font-size:11.5px;"><span class="cmt">Angular dev server outputs (approx):</span>
+
+main.js          <span class="cmt">~2-5 MB (unminified, source maps)</span>
+polyfills.js     <span class="cmt">~130 KB</span>
+vendor.js        <span class="cmt">~3-8 MB (Angular + libs, unminified)</span>
+styles.css       <span class="cmt">full size</span>
+runtime.js       <span class="cmt">~7 KB (webpack runtime)</span>
+
+<span class="cmt">Plus HMR (Hot Module Replacement) websocket</span>
+<span class="cmt">Plus inline source maps in each file</span>
+<span class="cmt">Total: 5-15 MB transferred in dev</span></pre>
+  </div>
+  <div class="card green">
+    <div class="card-label">Angular — Production (ng build)</div>
+    <pre style="font-size:11.5px;"><span class="cmt">dist/my-app/</span>
+main.[hash8].js       <span class="cmt">~200-800 KB (minified, gzipped ~60-200KB)</span>
+polyfills.[hash].js   <span class="cmt">~35 KB (gzipped ~12KB)</span>
+runtime.[hash].js     <span class="cmt">~2 KB (webpack loader)</span>
+styles.[hash].css     <span class="cmt">~5-50 KB</span>
+[lazy-route].[hash].js <span class="cmt">per lazy module</span>
+index.html            <span class="cmt">&lt;2 KB (links to above)</span>
+assets/               <span class="cmt">images, fonts</span>
+
+<span class="cmt">Why hashed names? Cache busting.</span>
+<span class="cmt">main.abc123.js → user downloads once</span>
+<span class="cmt">Deploy new: main.def456.js → new download</span></pre>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card" style="border-color:var(--react);">
+    <div class="card-label" style="color:var(--react);">React — Dev Mode (npm start / Vite)</div>
+    <pre style="font-size:11.5px;"><span class="cmt">Vite dev server:</span>
+<span class="cmt">- NO bundling in dev!</span>
+<span class="cmt">- Browser receives native ES modules</span>
+<span class="cmt">- Each file served individually</span>
+<span class="cmt">- 100+ separate JS requests is normal</span>
+<span class="cmt">- Vite only transforms (Babel/esbuild) on request</span>
+<span class="cmt">- HMR updates: only changed module sent</span>
+<span class="cmt">- First load: ~2-5s. Subsequent HMR: &lt;100ms</span>
+
+<span class="cmt">CRA (Webpack) dev:</span>
+<span class="cmt">- Bundles everything into large bundle.js</span>
+<span class="cmt">- HMR replaces modules in memory</span>
+<span class="cmt">- Slower HMR than Vite on large projects</span></pre>
+  </div>
+  <div class="card" style="border-color:var(--react);">
+    <div class="card-label" style="color:var(--react);">React — Production (npm run build)</div>
+    <pre style="font-size:11.5px;"><span class="cmt">build/ (Vite, React project):</span>
+assets/
+  index.[hash].js        <span class="cmt">~80-300 KB minified</span>
+  index.[hash].css       <span class="cmt">~10-80 KB</span>
+  [chunk].[hash].js      <span class="cmt">per React.lazy() chunk</span>
+  [vendor].[hash].js     <span class="cmt">react, react-dom separate chunk</span>
+index.html               <span class="cmt">&lt;1 KB</span>
+
+<span class="cmt">Why separate vendor chunk?</span>
+<span class="cmt">react + react-dom = ~45KB gzipped</span>
+<span class="cmt">Changes rarely → cached by browser</span>
+<span class="cmt">Your app code changes often → smaller re-download</span></pre>
+  </div>
+</div>
+
+<h2>Zone.js — I Am the Middleman (Deep Dive)</h2>
+
+<div class="card amber">
+  <div class="card-label">🌐 Zone.js: Patching the Browser's Async DNA</div>
+  <p>Zone.js doesn't watch your data. It watches <em>time</em> — specifically, every async operation that could change data.</p>
+  <pre><span class="cmt">// Zone.js patches these browser APIs at startup:</span>
+<span class="cmt">// (Replaces them with wrapper versions)</span>
+setTimeout → zone.run(() => { original_setTimeout; notifyAngular(); })
+setInterval → zone.run(() => { original_setInterval; notifyAngular(); })
+Promise.then → zone.run(() => { original_then; notifyAngular(); })
+fetch → zone.run(() => { original_fetch; notifyAngular(); })
+addEventListener → zone.run(() => { original_addEventListener; notifyAngular(); })
+XMLHttpRequest.send → zone.run(() => { original_send; notifyAngular(); })</pre>
+
+  <p>When you click a button in Angular → that's <span class="inline-code">addEventListener</span> callback → wrapped by Zone.js → after your handler runs → Zone.js fires <span class="inline-code">onMicrotaskEmpty</span> → Angular's <span class="inline-code">ApplicationRef.tick()</span> runs → change detection walks component tree.</p>
+</div>
+
+<div class="card red">
+  <div class="card-label">🚨 Zone.js as a Bottleneck — The Pain Point</div>
+  <p>Zone.js is <strong>not selective</strong>. Every async event triggers a full component tree check. In a 200-component app:</p>
+  <ul style="font-size:13.5px;">
+    <li>A background <span class="inline-code">setInterval</span> polling every second → 200 components checked every second</li>
+    <li>A WebSocket that fires 30 messages/second → 30 × 200 = 6000 component checks/second</li>
+    <li>Third-party library using setTimeout internally → triggers Angular CD unintentionally</li>
+  </ul>
+  <p><strong>The escape hatches:</strong></p>
+  <pre><span class="cmt">// Run code OUTSIDE Zone.js (won't trigger CD):</span>
+<span class="fn">constructor</span>(<span class="kw">private</span> ngZone: <span class="type">NgZone</span>) {}
+
+<span class="kw">this</span>.ngZone.runOutsideAngular(() => {
+  setInterval(() => {
+    <span class="cmt">// This does NOT trigger change detection</span>
+    <span class="cmt">// Useful for: canvas animations, WebGL, heavy polling</span>
+    <span class="kw">this</span>.updateCanvas();
+  }, <span class="num">16</span>); <span class="cmt">// 60fps</span>
+});
+
+<span class="cmt">// When you DO need CD after outside work:</span>
+<span class="kw">this</span>.ngZone.run(() => {
+  <span class="kw">this</span>.data = newData; <span class="cmt">// Now Angular detects this</span>
+});</pre>
+  <p><strong>Angular Signals (v16+) — Zone.js alternative:</strong> Signals tell Angular exactly which component to update. No full tree walk. Angular 18+ supports "Zoneless" mode — no Zone.js at all, only Signals for change detection.</p>
+</div>
+
+<div class="card purple">
+  <div class="card-label">🔄 Two-Way Data Binding — How Many Events?</div>
+  <p>Angular's famous <span class="inline-code">[(ngModel)]</span> is "banana in a box" syntax — actually sugar for:</p>
+  <pre><span class="cmt">// [(ngModel)]="name" expands to:</span>
+<span class="tag">&lt;input</span>
+  <span class="attr">[ngModel]</span>=<span class="str">"name"</span>        <span class="cmt">&lt;!-- Property binding: Component → View --&gt;</span>
+  <span class="attr">(ngModelChange)</span>=<span class="str">"name = $event"</span>  <span class="cmt">&lt;!-- Event binding: View → Component --&gt;</span>
+<span class="tag">/&gt;</span>
+
+<span class="cmt">// Every keystroke fires:</span>
+<span class="cmt">// 1. input event → (ngModelChange) → updates component.name</span>
+<span class="cmt">// 2. Zone.js detects the event → triggers CD</span>
+<span class="cmt">// 3. CD checks: did [ngModel] value change? → re-renders input</span>
+<span class="cmt">// 2 events per keystroke: DOM event + CD cycle</span>
+
+<span class="cmt">// In a form with 20 fields, each keystroke triggers:</span>
+<span class="cmt">// - 1 event handler + 1 Zone.js notification + 20 field checks</span></pre>
+  <p><strong>React's approach:</strong> No two-way binding. You write one-way data flow explicitly: <span class="inline-code">value={state}</span> + <span class="inline-code">onChange={handler}</span>. Same events, but React batches state updates and only re-renders changed components via VDOM diffing.</p>
+</div>
+
+<div class="recap-box">
+  <div class="recap-label">⏱ 30-Second Revision — Angular</div>
+  AOT ≠ tsc. AOT compiles HTML templates → JS instructions. tsc strips types. Ivy integrates both. ngc = old name for Angular compiler. Dev: large unminified files + source maps. Prod: hashed, minified chunks. Zone.js patches ALL async APIs → triggers change detection. runOutsideAngular() escapes Zone.js for perf. Two-way binding = 2 events per user input. Signals (v16+) replaces Zone.js model with surgical updates.
+</div>
+</section>
+
+<!-- ===== SECTION 6: REACT ===== -->
+<section id="react">
+<div class="section-tag">Section 6 · Framework Deep-Dive</div>
+<h1><span class="section-number" style="background:rgba(97,218,251,0.15);color:var(--react);">6</span>React — The Composable UI Library</h1>
+
+<div class="card" style="border-color:var(--react);background:rgba(97,218,251,0.04);">
+  <div class="card-label" style="color:var(--react);">📸 Snapshot — The LEGO Set</div>
+  <p>React is only a <strong>UI library</strong> — it renders components and tracks updates. Routing, HTTP, state management, DI, forms — all optional, all your choice. This is freedom. It's also chaos without discipline.</p>
+</div>
+
+<h2>Why Does React Not Need a Compiler Like Angular?</h2>
+
+<div class="card">
+  <div class="card-label" style="color:var(--react);">🔍 React's Simpler Build Requirements</div>
+  <p>Angular templates are a <strong>separate language</strong> — HTML-like syntax with Angular directives (<span class="inline-code">*ngFor</span>, <span class="inline-code">*ngIf</span>, <span class="inline-code">{{ }}</span> interpolation, <span class="inline-code">[binding]</span>, <span class="inline-code">(events)</span>). This requires a custom compiler to understand and transform.</p>
+  <p>React's JSX is <strong>just JavaScript with angle bracket syntax</strong>. Babel transforms it with one simple rule: every <span class="inline-code">&lt;tag&gt;</span> → <span class="inline-code">React.createElement('tag', ...)</span>. That's it. No custom language, no template analysis. Babel's generic AST transformation handles it.</p>
+  <p>React's dependency on Babel is provided by the community tooling (Create React App, Vite's React plugin) — not by React itself. React the library is just 45KB of DOM reconciliation logic.</p>
+</div>
+
+<h2>Virtual DOM vs Shadow DOM — Completely Different Things</h2>
+
+<div class="card red">
+  <div class="card-label">🚨 Most Confused Pair in Web Development</div>
+  <div class="grid-2">
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--react);">Virtual DOM (React)</h3>
+      <ul style="font-size:13px;">
+        <li><strong>Pure JavaScript objects</strong> — not real DOM nodes</li>
+        <li>Lives entirely in JS memory (heap)</li>
+        <li>Created by <span class="inline-code">React.createElement()</span> calls</li>
+        <li>Used for <strong>diffing</strong> — compare old tree vs new tree</li>
+        <li>Tells React: "only update these 3 real DOM nodes"</li>
+        <li>Discarded after each render — temporary scratch pad</li>
+        <li>Purpose: <strong>performance optimization</strong></li>
+        <li>React-specific. Vue also uses Virtual DOM.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--accent5);">Shadow DOM (Web Standard)</h3>
+      <ul style="font-size:13px;">
+        <li><strong>Real browser DOM nodes</strong> — just hidden/encapsulated</li>
+        <li>Part of the browser's native DOM APIs</li>
+        <li>Created by <span class="inline-code">element.attachShadow({mode:'open'})</span></li>
+        <li>Used for <strong>style encapsulation</strong> — CSS in shadow root can't leak out</li>
+        <li>Persists like normal DOM. Used by Web Components.</li>
+        <li>Purpose: <strong>encapsulation for Custom Elements</strong></li>
+        <li>Browser standard (HTML spec). Works without any framework.</li>
+        <li>Angular's ViewEncapsulation.ShadowDom uses it.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alert-box" style="margin:10px 0 0;">
+    <div class="alert-label">🎯 The Simple Distinction</div>
+    <p><strong>Virtual DOM</strong> = "I'll pretend-build the house in my head first, then only do the real construction where needed." (Performance trick, not real DOM)</p>
+    <p><strong>Shadow DOM</strong> = "I'll build a room with one-way glass walls — styles inside can't escape, styles outside can't enter." (Real DOM, isolation trick)</p>
+  </div>
+</div>
+
+<h2>Does React Work on Shadow DOM?</h2>
+<p>By default, <strong>React renders into the regular light DOM</strong>. It mounts into <span class="inline-code">&lt;div id="root"&gt;</span> which is normal DOM. React can be made to render inside a Shadow Root but it requires workarounds (event delegation issues, CSS-in-JS injection challenges). Angular has better Shadow DOM support via <span class="inline-code">ViewEncapsulation.ShadowDom</span>. Angular's default is <span class="inline-code">ViewEncapsulation.Emulated</span> — it fakes Shadow DOM by adding unique attribute selectors to CSS rules without using the real Shadow DOM API.</p>
+
+<h2>Is "Rebuilding the Entire Building" a Pain in Angular Too?</h2>
+
+<div class="card amber">
+  <div class="card-label">⚠️ Angular's "Rebuilding" Problem — Different Flavor</div>
+  <p>Angular doesn't have React's Virtual DOM diffing. Instead it has <strong>Zone.js + dirty checking</strong>. For every async event, Angular walks the ENTIRE component tree top-to-bottom, checking if any <span class="inline-code">@Input</span> values changed. For large apps, this is Angular's "rebuilding" equivalent.</p>
+  <p><strong>OnPush Change Detection</strong> — Angular's optimization:</p>
+  <pre><span class="cmt">// Default (ChangeDetectionStrategy.Default):</span>
+<span class="cmt">// Every event → check ALL components</span>
+
+<span class="kw">@Component</span>({
+  changeDetection: <span class="type">ChangeDetectionStrategy</span>.OnPush
+  <span class="cmt">// OnPush: only check this component when:</span>
+  <span class="cmt">// 1. An @Input reference changes (not mutation!)</span>
+  <span class="cmt">// 2. An Observable it subscribes to emits via async pipe</span>
+  <span class="cmt">// 3. A DOM event fires inside this component</span>
+  <span class="cmt">// 4. markForCheck() called manually</span>
+})
+<span class="kw">class</span> <span class="type">ProductCardComponent</span> { }</pre>
+  <p>React's approach avoids this entirely: <span class="inline-code">useState</span> updates trigger re-render of only the component that called setState and its children. No full tree walk by default.</p>
+</div>
+
+<h2>React's Alternatives to Angular Features</h2>
+
+<table class="comp-table">
+  <thead>
+    <tr>
+      <th>Angular Feature</th>
+      <th class="react-col">React Equivalent</th>
+      <th>Difference</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>*ngFor</td>
+      <td><span class="inline-code">{items.map(item => &lt;Item /&gt;)}</span></td>
+      <td>Just JavaScript. No directive needed.</td>
+    </tr>
+    <tr>
+      <td>*ngIf</td>
+      <td><span class="inline-code">{condition && &lt;Component /&gt;}</span></td>
+      <td>Short-circuit evaluation. Pure JS.</td>
+    </tr>
+    <tr>
+      <td>[(ngModel)] two-way</td>
+      <td><span class="inline-code">value={state} onChange={fn}</span></td>
+      <td>Explicit one-way. No magic.</td>
+    </tr>
+    <tr>
+      <td>@Injectable services</td>
+      <td>Custom hooks + Context API</td>
+      <td>No pool. New instance or module-scope singleton.</td>
+    </tr>
+    <tr>
+      <td>HttpClient (Angular)</td>
+      <td>fetch / axios / React Query</td>
+      <td>Community choice. No built-in.</td>
+    </tr>
+    <tr>
+      <td>RouterModule</td>
+      <td>React Router / TanStack Router</td>
+      <td>Community choice. Multiple options.</td>
+    </tr>
+    <tr>
+      <td>Reactive Forms</td>
+      <td>react-hook-form / Formik / Zod</td>
+      <td>Community choice. Multiple patterns.</td>
+    </tr>
+    <tr>
+      <td>Pipe (| currency)</td>
+      <td><span class="inline-code">Intl.NumberFormat()</span> or library</td>
+      <td>No built-in pipe system.</td>
+    </tr>
+    <tr>
+      <td>NgRx</td>
+      <td>Redux / Zustand / Jotai / Recoil</td>
+      <td>Many options. Redux most established.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Why Did React Win? Why Is Angular "Just Surviving"?</h2>
+
+<div class="story-box">
+  <div class="story-label">📖 The Market Shift — Why React Dominates</div>
+  <p><strong>2010–2014:</strong> Angular 1 (AngularJS) was the dominant SPA framework. Google-backed. Two-way binding felt like magic. Millions of devs adopted it.</p>
+  <p><strong>2013:</strong> Facebook releases React. No routing, no HTTP, no forms — just UI. Developers were confused: "This isn't a framework. Where's everything else?" It was criticized as incomplete.</p>
+  <p><strong>2016:</strong> Angular 2 releases. Complete rewrite. Not backward compatible with Angular 1. Thousands of companies' existing apps are broken. Angular devs are furious. Trust erodes.</p>
+  <p><strong>Meanwhile React:</strong> Never broke backward compatibility. React 16 → 17 → 18 — upgrading is smooth. The ecosystem matured (Redux, React Router, React Query). TypeScript support excellent. React Native extends skills to mobile.</p>
+  <p><strong>The numbers:</strong> React ~43% of frontend devs use it (State of JS survey). Angular ~20%. Vue ~16%. Svelte rising. Angular is enterprise-dominant (banks, government, Google products) but React wins in startup land and overall developer mindshare.</p>
+  <p><strong>The real reason React won:</strong> Freedom. React lets you choose your tools. Many devs prefer composability over convention. Also: React's component model (functions + hooks) is simpler to reason about than Angular's class + decorator + module + injector system. The learning curve difference is real — React fundamentals in 1 week, Angular fundamentals in 1 month.</p>
+</div>
+
+<h2>Polyfills in React — How Are They Handled?</h2>
+
+<div class="card">
+  <div class="card-label" style="color:var(--react);">💊 React Polyfill Strategy</div>
+  <p>React itself does not ship polyfills. Polyfill strategy depends on your build tool:</p>
+  <div class="code-compare">
+    <div class="code-side">
+      <span class="code-side-label react-label">Vite (Modern React)</span>
+      <pre style="font-size:11.5px;"><span class="cmt">// vite.config.ts</span>
+<span class="kw">import</span> legacy <span class="kw">from</span> <span class="str">'@vitejs/plugin-legacy'</span>
+plugins: [
+  legacy({
+    targets: [<span class="str">'defaults'</span>, <span class="str">'not IE 11'</span>]
+    <span class="cmt">// Generates TWO bundles:</span>
+    <span class="cmt">// 1. Modern bundle (no polyfills)</span>
+    <span class="cmt">// 2. Legacy bundle (with polyfills)</span>
+    <span class="cmt">// Browser gets correct version via</span>
+    <span class="cmt">// &lt;script type="module"&gt; detection</span>
+  })
+]</pre>
+    </div>
+    <div class="code-side">
+      <span class="code-side-label before-label">CRA / Webpack</span>
+      <pre style="font-size:11.5px;"><span class="cmt">// .browserslistrc or package.json:</span>
+<span class="str">"browserslist"</span>: [
+  <span class="str">"&gt;0.2%"</span>,
+  <span class="str">"not dead"</span>,
+  <span class="str">"not ie 11"</span>
+]
+<span class="cmt">// Babel's @babel/preset-env reads this</span>
+<span class="cmt">// Adds polyfills for only what's needed</span>
+<span class="cmt">// using core-js library</span>
+
+<span class="cmt">// src/index.js - manual polyfills:</span>
+<span class="kw">import</span> <span class="str">'core-js/stable'</span>;
+<span class="kw">import</span> <span class="str">'regenerator-runtime/runtime'</span>;</pre>
+    </div>
+  </div>
+  <p><strong>Angular's polyfills.ts</strong> — Angular has a dedicated file <span class="inline-code">src/polyfills.ts</span> that is always bundled separately. React has no equivalent — polyfills are added via Babel's <span class="inline-code">useBuiltIns</span> option or manually imported. Angular's approach is more explicit; React's is more configurable but also more confusing.</p>
+</div>
+
+<div class="recall-box">
+  <div class="recall-label">⚡ Recall Triggers</div>
+  <strong>Virtual DOM</strong> = J's scratch pad (not real DOM). <strong>Shadow DOM</strong> = real DOM room with one-way glass. React uses VDOM. Angular uses emulated Shadow DOM by default. React won because: simpler mental model + no breaking changes + freedom to choose tools + hooks. Angular won enterprises. No DI = less scaffolding code in React (truly less boilerplate).
+</div>
+</section>
+
+<!-- ===== SECTION 7: RxJS ===== -->
+<section id="rxjs">
+<div class="section-tag">Section 7 · Library Deep-Dive</div>
+<h1><span class="section-number" style="background:rgba(196,121,240,0.2);color:var(--accent5);">7</span>RxJS — The Async Conveyor Belt</h1>
+
+<div class="card purple">
+  <div class="card-label">📸 Snapshot — 30 Seconds</div>
+  <p>RxJS is a library for <strong>composing asynchronous events as streams</strong>. Instead of handling each event in isolation (callbacks, promises), you build <em>pipelines</em>. Data flows in, transforms happen, results flow out. Like factory conveyor belts — set up the line once, production runs forever.</p>
+</div>
+
+<h2>The Core Evolution — Why RxJS Was Needed</h2>
+
+<div class="evo-tree">
+<span class="root">Async Handling Evolution</span>
+ │
+ ├── <span class="problem">Callbacks (pre-2013) — "Callback Hell"</span>
+ │    └── <span class="note">getData(url, (err, data) => { parse(data, (err, parsed) => { save(parsed, (err) => { ... }) }) })</span>
+ │
+ ├── <span class="solution">Promises (ES2015) — linear chains</span>
+ │    ├── <span class="note">fetch(url).then(parse).then(save).catch(handle)</span>
+ │    ├── <span class="note">Better! But: only resolves ONCE. Can't cancel.</span>
+ │    └── <span class="problem">Problem: can't handle streams (WebSocket, user events, polling)</span>
+ │
+ ├── <span class="solution">async/await (ES2017) — synchronous-looking async</span>
+ │    ├── <span class="note">const data = await fetch(url); Beautiful.</span>
+ │    └── <span class="problem">Problem: still single-value. No stream handling.</span>
+ │
+ └── <span class="solution">RxJS Observables — multi-value async streams</span>
+      ├── <span class="note">Can emit 0, 1, or N values over time</span>
+      ├── <span class="note">Can be cancelled (unsubscribe)</span>
+      ├── <span class="note">Can be transformed (map, filter, throttle)</span>
+      └── <span class="note">Can be combined (merge, zip, combineLatest)</span>
+</div>
+
+<h2>Observable: The Core Concept</h2>
+
+<blockquote>A Promise is a one-time phone call. You dial, someone answers once, the call ends. An Observable is a radio station — it keeps broadcasting. You tune in (subscribe), receive the stream, and can tune out (unsubscribe) anytime. Other people can tune in simultaneously (multicast).
+<cite>— The key insight: Observable = lazy, cancellable, multi-value async</cite></blockquote>
+
+<pre><span class="cmt">// Promise — resolves ONCE, no cancel</span>
+<span class="kw">const</span> promise = fetch(<span class="str">'/api/user'</span>); <span class="cmt">// Starts immediately!</span>
+promise.<span class="fn">then</span>(data => console.<span class="fn">log</span>(data));
+<span class="cmt">// Can't cancel. If component unmounts, memory leak potential.</span>
+
+<span class="cmt">// Observable — lazy, multi-value, cancellable</span>
+<span class="kw">const</span> obs$ = <span class="kw">new</span> <span class="type">Observable</span>(observer => {
+  <span class="kw">const</span> ws = <span class="kw">new</span> WebSocket(<span class="str">'wss://api/stream'</span>);
+  ws.onmessage = msg => observer.<span class="fn">next</span>(msg.data);   <span class="cmt">// emit values</span>
+  ws.onerror = err => observer.<span class="fn">error</span>(err);          <span class="cmt">// emit error</span>
+  ws.onclose = () => observer.<span class="fn">complete</span>();           <span class="cmt">// done</span>
+  <span class="kw">return</span> () => ws.<span class="fn">close</span>(); <span class="cmt">// cleanup on unsubscribe!</span>
+});
+
+<span class="kw">const</span> sub = obs$.<span class="fn">subscribe</span>(data => console.<span class="fn">log</span>(data));
+<span class="cmt">// Later: component unmounts → call sub.unsubscribe() → WebSocket closes</span>
+<span class="cmt">// No memory leak. Clean resource management.</span></pre>
+
+<h2>Operators — The Transformation Pipeline</h2>
+
+<div class="card purple">
+  <div class="card-label">🏭 Building a Search-as-You-Type Pipeline</div>
+  <pre><span class="kw">import</span> { fromEvent } <span class="kw">from</span> <span class="str">'rxjs'</span>;
+<span class="kw">import</span> { debounceTime, distinctUntilChanged, switchMap, map, catchError } <span class="kw">from</span> <span class="str">'rxjs/operators'</span>;
+
+<span class="kw">const</span> searchInput = document.<span class="fn">getElementById</span>(<span class="str">'search'</span>);
+
+fromEvent(searchInput, <span class="str">'input'</span>).pipe(
+  <span class="fn">map</span>(<span class="fn">event</span> => event.target.value),      <span class="cmt">// extract value from event</span>
+  <span class="fn">debounceTime</span>(<span class="num">300</span>),                      <span class="cmt">// wait 300ms after last keystroke</span>
+  <span class="fn">distinctUntilChanged</span>(),                 <span class="cmt">// skip if same as previous value</span>
+  <span class="fn">filter</span>(<span class="fn">term</span> => term.length > <span class="num">2</span>),        <span class="cmt">// minimum 3 chars</span>
+  <span class="fn">switchMap</span>(<span class="fn">term</span> =>                        <span class="cmt">// cancel previous HTTP, start new</span>
+    http.<span class="fn">get</span>(<span class="str">`/api/search?q=<span class="kw">${</span>term<span class="kw">}</span>`</span>)
+      .pipe(<span class="fn">catchError</span>(() => of([])))      <span class="cmt">// handle errors gracefully</span>
+  )
+).subscribe({
+  next: results => <span class="kw">this</span>.results = results,
+  error: err => console.<span class="fn">error</span>(err)
+});</pre>
+  <p>Without RxJS, implementing this requires: debounce function + cancel logic for previous requests + deduplication check + minimum length check + error handling — all manually wired together. With RxJS: 6 clean operator lines.</p>
+</div>
+
+<h2>Key Operators — The Vocabulary You Must Know</h2>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-label" style="color:var(--accent5);">Transformation Operators</div>
+    <ul style="font-size:12.5px;">
+      <li><span class="inline-code">map(fn)</span> — transform each value. Like Array.map but for streams.</li>
+      <li><span class="inline-code">filter(fn)</span> — only pass values matching predicate</li>
+      <li><span class="inline-code">tap(fn)</span> — side effects without changing stream (logging, debugging)</li>
+      <li><span class="inline-code">scan(fn, seed)</span> — like Array.reduce but emits running accumulation</li>
+      <li><span class="inline-code">pluck('key')</span> — extract a property from each emitted object</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-label" style="color:var(--accent5);">Flattening Operators (most confusing)</div>
+    <ul style="font-size:12.5px;">
+      <li><span class="inline-code">switchMap</span> — cancel previous inner observable when new outer value arrives. <strong>Search, autocomplete.</strong></li>
+      <li><span class="inline-code">mergeMap</span> — run all inner observables concurrently. <strong>Parallel HTTP calls.</strong></li>
+      <li><span class="inline-code">concatMap</span> — queue inner observables in order. <strong>Sequential uploads.</strong></li>
+      <li><span class="inline-code">exhaustMap</span> — ignore new outer values while inner is active. <strong>Login buttons (prevent double-submit).</strong></li>
+    </ul>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-label" style="color:var(--accent5);">Time-Based Operators</div>
+    <ul style="font-size:12.5px;">
+      <li><span class="inline-code">debounceTime(ms)</span> — emit only after N ms of silence</li>
+      <li><span class="inline-code">throttleTime(ms)</span> — emit max once per N ms</li>
+      <li><span class="inline-code">delay(ms)</span> — delay each emission by N ms</li>
+      <li><span class="inline-code">timeout(ms)</span> — error if nothing emitted within N ms</li>
+      <li><span class="inline-code">distinctUntilChanged()</span> — skip duplicate consecutive values</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-label" style="color:var(--accent5);">Combination Operators</div>
+    <ul style="font-size:12.5px;">
+      <li><span class="inline-code">combineLatest([a$, b$])</span> — emit when either updates, with latest of both. <strong>Form with multiple dropdowns.</strong></li>
+      <li><span class="inline-code">forkJoin([a$, b$])</span> — wait for ALL to complete, emit last values. <strong>Parallel HTTP like Promise.all.</strong></li>
+      <li><span class="inline-code">merge(a$, b$)</span> — combine streams, emit from whichever fires first</li>
+      <li><span class="inline-code">zip(a$, b$)</span> — pair values by index (1st of a with 1st of b)</li>
+    </ul>
+  </div>
+</div>
+
+<h2>RxJS vs RxJava vs React's Async — Comparison</h2>
+
+<table class="comp-table">
+  <thead>
+    <tr>
+      <th>Dimension</th>
+      <th>RxJS (Angular)</th>
+      <th class="react-col">React Async (Hooks)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Single value</td>
+      <td><span class="inline-code">Observable + firstValueFrom()</span></td>
+      <td><span class="inline-code">useEffect + fetch()</span></td>
+    </tr>
+    <tr>
+      <td>Stream of values</td>
+      <td><span class="inline-code">Observable.pipe(operators)</span></td>
+      <td>No built-in. Use EventSource or custom hook.</td>
+    </tr>
+    <tr>
+      <td>Cancel on unmount</td>
+      <td><span class="inline-code">takeUntil(destroy$)</span></td>
+      <td><span class="inline-code">useEffect return cleanup fn</span></td>
+    </tr>
+    <tr>
+      <td>Caching</td>
+      <td><span class="inline-code">shareReplay(1)</span></td>
+      <td>React Query / SWR</td>
+    </tr>
+    <tr>
+      <td>Combining streams</td>
+      <td><span class="inline-code">combineLatest / forkJoin</span></td>
+      <td><span class="inline-code">Promise.all + useState</span></td>
+    </tr>
+    <tr>
+      <td>Learning curve</td>
+      <td>Steep (marble diagrams, operator choice)</td>
+      <td>Gentle (useState + useEffect is enough for 80%)</td>
+    </tr>
+    <tr>
+      <td>Debugging</td>
+      <td>Hard (chain errors hard to trace)</td>
+      <td>Easier (each useEffect is isolated)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="hooks-grid">
+  <div class="hook-card">
+    <div class="emoji">📻</div>
+    <div class="hook-title">Memory Hook 1</div>
+    <p>Observable = radio station. You subscribe = tune in. Unsubscribe = tune out. Station broadcasts regardless. Multiple listeners OK.</p>
+  </div>
+  <div class="hook-card">
+    <div class="emoji">🔀</div>
+    <div class="hook-title">Memory Hook 2 — switchMap</div>
+    <p>switchMap = restaurant with one chef. New order arrives → chef abandons current dish, starts new. Previous order is cancelled. Use for search.</p>
+  </div>
+  <div class="hook-card">
+    <div class="emoji">🏭</div>
+    <div class="hook-title">Memory Hook 3</div>
+    <p>pipe() = factory conveyor. Data enters left. Each operator = one workstation. Data exits right. Set up once, runs forever.</p>
+  </div>
+</div>
+
+<div class="reverse-box">
+  <div class="rev-label">🔄 Without RxJS — Real Pain</div>
+  <ul style="font-size:13.5px;">
+    <li>Search debouncing: manually write setTimeout/clearTimeout + cancel logic = 20 lines</li>
+    <li>WebSocket with retry: manually handle reconnect, backoff, cleanup = 50 lines</li>
+    <li>Combine 3 streams: Promise.all-like manual coordination = 40 lines</li>
+    <li>Cancel HTTP on component destroy: track AbortController instances manually</li>
+    <li>Polling with backoff: setInterval + error handling + cleanup = 60 lines</li>
+  </ul>
+</div>
+
+<div class="recap-box">
+  <div class="recap-label">⏱ 30-Second Revision — RxJS</div>
+  Observable = multi-value, lazy, cancellable async. Promise = single-value, eager, non-cancellable. Key operators: map/filter (transform), switchMap (cancel+restart), mergeMap (parallel), debounceTime (wait for silence), combineLatest (merge streams). Angular uses RxJS everywhere: HTTP returns Observable, Router events are Observable, form changes are Observable. React doesn't use RxJS — uses hooks + React Query instead. RxJS = powerful but steep learning curve.
+</div>
+</section>
+
+<!-- ===== SECTION 8: COMPARISON ===== -->
+<section id="comparison">
+<div class="section-tag">Section 8 · Side-by-Side</div>
+<h1><span class="section-number" style="background:linear-gradient(135deg,rgba(221,0,49,0.2),rgba(97,218,251,0.15));color:#fff;">8</span>Angular vs React — The Full Comparison</h1>
+
+<table class="comp-table">
+  <thead>
+    <tr>
+      <th style="width:18%;">Dimension</th>
+      <th class="angular-col" style="width:41%;">⬡ Angular</th>
+      <th class="react-col" style="width:41%;">⬡ React</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Type</td><td>Full Framework — batteries included</td><td>UI Library — bring your own everything else</td></tr>
+    <tr><td>Language</td><td>TypeScript enforced</td><td>JS or TS, your choice</td></tr>
+    <tr><td>Template</td><td>HTML + Angular directives (*ngFor, *ngIf)</td><td>JSX — JavaScript with HTML-like syntax</td></tr>
+    <tr><td>Framework Compiler</td><td>Ivy (ngc) — compiles templates + decorators → JS instructions at build time</td><td>No custom framework compiler. Babel transforms JSX only.</td></tr>
+    <tr><td>Bundler</td><td>esbuild (v17+ dev), Webpack (legacy prod), transitioning to Vite</td><td>Vite (esbuild dev + Rollup prod) or Webpack (CRA)</td></tr>
+    <tr><td>DI System</td><td>Built-in formal DI container. Hierarchical injector pool. @Injectable decorators.</td><td>No DI. Context API for passing values. Custom hooks for reusable logic.</td></tr>
+    <tr><td>Change Detection</td><td>Zone.js patches async APIs → full tree check. OnPush = opt-in optimization. Signals (v16+) = surgical.</td><td>VDOM diffing. Re-render triggers only state-owning component + children.</td></tr>
+    <tr><td>Async Library</td><td>RxJS (built-in pattern). Observables everywhere.</td><td>Promises + async/await. React Query / SWR for data fetching.</td></tr>
+    <tr><td>State Management</td><td>Services + RxJS. NgRx for large scale.</td><td>useState, useReducer, Context. Redux / Zustand / Jotai.</td></tr>
+    <tr><td>Routing</td><td>@angular/router (built-in)</td><td>React Router / TanStack Router (community)</td></tr>
+    <tr><td>Forms</td><td>Template-driven + Reactive Forms (built-in)</td><td>react-hook-form / Formik / Zod (community)</td></tr>
+    <tr><td>Two-way binding</td><td>[(ngModel)] — 2 events per input (Property + Event)</td><td>value + onChange — explicit, 1 event per input</td></tr>
+    <tr><td>Polyfills</td><td>Dedicated polyfills.ts file, always bundled separately</td><td>@babel/preset-env + browserslist, or @vitejs/plugin-legacy</td></tr>
+    <tr><td>Shadow DOM</td><td>ViewEncapsulation.Emulated (default), ShadowDom (optional)</td><td>Not used by default. Possible with workarounds.</td></tr>
+    <tr><td>Build Output (prod)</td><td>dist/ with main, polyfills, runtime, styles — all hashed</td><td>build/ or dist/ with main, vendor, lazy chunks — all hashed</td></tr>
+    <tr><td>Boilerplate</td><td>High — module, component, service, injection all needed</td><td>Low — one function component, one import from react</td></tr>
+    <tr><td>Learning curve</td><td>Steep — 1 month to be productive</td><td>Gentle entry, steeper ecosystem choices — 1 week basics</td></tr>
+    <tr><td>Why it wins</td><td>Enterprise: standardized codebase across 100-dev teams</td><td>Everywhere else: simpler, faster DX, ecosystem maturity</td></tr>
+  </tbody>
+</table>
+
+<h2>The "Main Role" Player in Each Build</h2>
+<div class="grid-2">
+  <div class="card red">
+    <div class="card-label">Angular — Main Actor: Angular CLI + Ivy</div>
+    <p><span class="inline-code">ng build</span> orchestrates everything. Ivy compiles Angular-specific syntax. tsc handles TypeScript. esbuild/Webpack bundles. You touch none of these individually — Angular CLI is the conductor.</p>
+  </div>
+  <div class="card" style="border-color:var(--react);">
+    <div class="card-label" style="color:var(--react);">React — Main Actor: Vite/Webpack + Babel</div>
+    <p>Babel is foundational (JSX would crash browser without it). Vite/Webpack bundles, tree-shakes, splits. React.js itself is just a runtime library — the intelligence is in the build tools, not the framework.</p>
+  </div>
+</div>
+</section>
+
+<!-- ===== SECTION 9: FOLDER STRUCTURE ===== -->
+<section id="folder">
+<div class="section-tag">Section 9 · Internals</div>
+<h1><span class="section-number" style="background:rgba(80,200,160,0.2);color:var(--accent2);">9</span>Folder Structure — What Lives Where & Why</h1>
+
+<h2>Angular Folder Structure — Every File Explained</h2>
+
+<div class="code-compare">
+  <div class="code-side">
+    <span class="code-side-label angular-label">Angular Project Root</span>
+    <pre style="font-size:11.5px;">my-app/
+├── angular.json          <span class="cmt">← Master build config</span>
+├── package.json          <span class="cmt">← npm deps + scripts</span>
+├── tsconfig.json         <span class="cmt">← TypeScript root config</span>
+├── tsconfig.app.json     <span class="cmt">← App-specific TS config</span>
+├── tsconfig.spec.json    <span class="cmt">← Test-specific TS config</span>
+├── .browserslistrc       <span class="cmt">← Target browser list</span>
+├── .eslintrc.json        <span class="cmt">← Linting rules</span>
+├── karma.conf.js         <span class="cmt">← Test runner config</span>
+│
+├── src/
+│   ├── main.ts           <span class="cmt">← Entry point (bootstraps app)</span>
+│   ├── polyfills.ts      <span class="cmt">← Browser polyfills</span>
+│   ├── styles.scss       <span class="cmt">← Global styles</span>
+│   ├── environments/
+│   │   ├── environment.ts        <span class="cmt">← Dev env vars</span>
+│   │   └── environment.prod.ts   <span class="cmt">← Prod env vars</span>
+│   │
+│   └── app/
+│       ├── app.module.ts         <span class="cmt">← Root NgModule</span>
+│       ├── app.component.ts      <span class="cmt">← Root component class</span>
+│       ├── app.component.html    <span class="cmt">← Root template</span>
+│       ├── app.component.scss    <span class="cmt">← Root component styles</span>
+│       ├── app.component.spec.ts <span class="cmt">← Root component tests</span>
+│       ├── app-routing.module.ts <span class="cmt">← Route definitions</span>
+│       │
+│       ├── core/                 <span class="cmt">← Singleton services (imported ONCE in AppModule)</span>
+│       │   ├── services/
+│       │   │   └── auth.service.ts
+│       │   ├── guards/
+│       │   │   └── auth.guard.ts
+│       │   └── interceptors/
+│       │       └── jwt.interceptor.ts
+│       │
+│       ├── shared/               <span class="cmt">← Reusable components/pipes/directives</span>
+│       │   ├── components/
+│       │   ├── pipes/
+│       │   └── shared.module.ts
+│       │
+│       └── features/             <span class="cmt">← Feature modules (lazy-loaded)</span>
+│           ├── dashboard/
+│           │   ├── dashboard.module.ts
+│           │   ├── dashboard-routing.module.ts
+│           │   └── dashboard.component.ts
+│           └── products/
+│               ├── products.module.ts
+│               └── products.component.ts
+│
+├── dist/                 <span class="cmt">← Production build output</span>
+└── node_modules/         <span class="cmt">← Installed packages</span></pre>
+  </div>
+  <div class="code-side">
+    <span class="code-side-label react-label">React Project (Vite)</span>
+    <pre style="font-size:11.5px;">my-react-app/
+├── vite.config.ts        <span class="cmt">← Build + plugin config</span>
+├── package.json          <span class="cmt">← npm deps + scripts</span>
+├── tsconfig.json         <span class="cmt">← TypeScript config</span>
+├── tsconfig.node.json    <span class="cmt">← Config for Node files (vite.config)</span>
+├── .eslintrc.cjs         <span class="cmt">← Linting rules</span>
+├── .env                  <span class="cmt">← Dev env vars (VITE_ prefix)</span>
+├── .env.production       <span class="cmt">← Prod env vars</span>
+├── index.html            <span class="cmt">← SPA shell (Vite serves this)</span>
+│
+├── src/
+│   ├── main.tsx          <span class="cmt">← Entry point (ReactDOM.createRoot)</span>
+│   ├── App.tsx           <span class="cmt">← Root component</span>
+│   ├── App.css           <span class="cmt">← Root styles</span>
+│   ├── vite-env.d.ts     <span class="cmt">← Vite type definitions</span>
+│   │
+│   ├── assets/           <span class="cmt">← Static assets (images, fonts)</span>
+│   │
+│   ├── components/       <span class="cmt">← Reusable UI components</span>
+│   │   ├── Button/
+│   │   │   ├── Button.tsx
+│   │   │   ├── Button.test.tsx
+│   │   │   └── Button.module.css
+│   │   └── index.ts      <span class="cmt">← barrel file (re-exports)</span>
+│   │
+│   ├── hooks/            <span class="cmt">← Custom hooks (useUser, useCart)</span>
+│   │   └── useUser.ts
+│   │
+│   ├── contexts/         <span class="cmt">← React Context providers</span>
+│   │   └── AuthContext.tsx
+│   │
+│   ├── pages/            <span class="cmt">← Route-level components</span>
+│   │   ├── HomePage.tsx
+│   │   └── DashboardPage.tsx
+│   │
+│   ├── services/         <span class="cmt">← API calls, business logic</span>
+│   │   └── userService.ts
+│   │
+│   ├── store/            <span class="cmt">← State management (Redux/Zustand)</span>
+│   │   └── userSlice.ts
+│   │
+│   └── types/            <span class="cmt">← TypeScript interfaces</span>
+│       └── user.types.ts
+│
+├── dist/                 <span class="cmt">← Production build output</span>
+└── node_modules/</pre>
+  </div>
+</div>
+
+<h2>Why Each Folder/File Exists — The "Role" Explanation</h2>
+
+<div class="card">
+  <div class="card-label" style="color:var(--angular);">Angular: core/ vs shared/ vs features/ — Critical Distinction</div>
+  <div class="grid-3">
+    <div>
+      <h3 style="margin-top:0;font-size:13px;color:var(--accent3);">core/</h3>
+      <p style="font-size:12.5px;">Singleton services that must exist exactly once. AuthService, HttpInterceptors, Error handlers. Imported ONLY in AppModule. If you import CoreModule in a feature module — you get DUPLICATE singleton instances (bug).</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:13px;color:var(--accent3);">shared/</h3>
+      <p style="font-size:12.5px;">Reusable dumb components, pipes, and directives. No services here. SharedModule is imported by MANY feature modules. Can be imported multiple times safely (no singletons to duplicate).</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:13px;color:var(--accent3);">features/</h3>
+      <p style="font-size:12.5px;">Each feature is a lazy-loaded module. The router loads it on demand. Isolates each feature's dependencies. DashboardModule only loads when user navigates to /dashboard.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="border-color:var(--react);">
+  <div class="card-label" style="color:var(--react);">React: Hooks vs Services vs Contexts — No Module System</div>
+  <div class="grid-3">
+    <div>
+      <h3 style="margin-top:0;font-size:13px;color:var(--accent3);">hooks/</h3>
+      <p style="font-size:12.5px;">Custom hooks encapsulate reusable stateful logic. <span class="inline-code">useUser()</span>, <span class="inline-code">useCart()</span>. Each call to a hook creates a separate state instance — no implicit singleton.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:13px;color:var(--accent3);">contexts/</h3>
+      <p style="font-size:12.5px;">React Context = closest thing to Angular's singleton services. Wrap app in Provider → all children can access via useContext(). One instance per Provider in tree.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:13px;color:var(--accent3);">services/</h3>
+      <p style="font-size:12.5px;">Plain JS/TS modules — not React-specific. Just functions and classes for API calls or business logic. Imported directly. No DI magic. Single instance by module singleton (ES module caching).</p>
+    </div>
+  </div>
+</div>
+
+<div class="recall-box">
+  <div class="recall-label">⚡ Recall Trigger</div>
+  <strong>Angular folder rule:</strong> CoreModule = castle (only ONE entrance). SharedModule = marketplace (multiple vendors OK). Features = districts (self-contained). <strong>React folder rule:</strong> No enforced structure — this is freedom and chaos in one folder.
+</div>
+</section>
+
+<!-- ===== SECTION 10: CONFIG FILES ===== -->
+<section id="configs">
+<div class="section-tag">Section 10 · Build Configuration</div>
+<h1><span class="section-number" style="background:rgba(247,201,75,0.2);color:var(--accent3);">10</span>Build Config Files — Which File Controls What</h1>
+
+<p class="subtitle">These files are the "mission control" of your build pipeline. Wrong setting here = broken production, wrong bundle size, missing polyfills, or type errors that slip through.</p>
+
+<h2>Angular Build Configuration Files</h2>
+
+<div class="card red">
+  <div class="card-label">angular.json — The Master Build Orchestrator</div>
+  <pre><span class="cmt">// angular.json — controls EVERYTHING ng build does</span>
+{
+  <span class="str">"projects"</span>: {
+    <span class="str">"my-app"</span>: {
+      <span class="str">"architect"</span>: {
+        <span class="str">"build"</span>: {
+          <span class="str">"builder"</span>: <span class="str">"@angular-devkit/build-angular:browser"</span>,
+          <span class="str">"options"</span>: {
+            <span class="str">"outputPath"</span>: <span class="str">"dist/my-app"</span>,           <span class="cmt">// ← where output goes</span>
+            <span class="str">"index"</span>: <span class="str">"src/index.html"</span>,
+            <span class="str">"main"</span>: <span class="str">"src/main.ts"</span>,             <span class="cmt">// ← entry point</span>
+            <span class="str">"polyfills"</span>: <span class="str">"src/polyfills.ts"</span>,    <span class="cmt">// ← polyfills bundle</span>
+            <span class="str">"tsConfig"</span>: <span class="str">"tsconfig.app.json"</span>,   <span class="cmt">// ← which tsconfig</span>
+            <span class="str">"assets"</span>: [<span class="str">"src/favicon.ico"</span>, <span class="str">"src/assets"</span>],
+            <span class="str">"styles"</span>: [<span class="str">"src/styles.scss"</span>],     <span class="cmt">// ← global CSS</span>
+            <span class="str">"scripts"</span>: [],                    <span class="cmt">// ← global JS (legacy libs)</span>
+            <span class="str">"budgets"</span>: [
+              <span class="cmt">// ← WARN if bundle exceeds limits</span>
+              { <span class="str">"type"</span>: <span class="str">"initial"</span>, <span class="str">"maximumWarning"</span>: <span class="str">"500kb"</span>, <span class="str">"maximumError"</span>: <span class="str">"1mb"</span> }
+            ]
+          },
+          <span class="str">"configurations"</span>: {
+            <span class="str">"production"</span>: {
+              <span class="str">"optimization"</span>: <span class="kw">true</span>,            <span class="cmt">// ← enables minification</span>
+              <span class="str">"sourceMap"</span>: <span class="kw">false</span>,             <span class="cmt">// ← no source maps in prod</span>
+              <span class="str">"aot"</span>: <span class="kw">true</span>,                    <span class="cmt">// ← Ahead-of-Time compile</span>
+              <span class="str">"buildOptimizer"</span>: <span class="kw">true</span>,         <span class="cmt">// ← extra tree shaking</span>
+              <span class="str">"namedChunks"</span>: <span class="kw">false</span>,           <span class="cmt">// ← hash filenames</span>
+              <span class="str">"extractLicenses"</span>: <span class="kw">true</span>         <span class="cmt">// ← separate license file</span>
+            }
+          }
+        }
+      }
+    }
+  }
+}</pre>
+</div>
+
+<div class="card amber">
+  <div class="card-label">tsconfig.json — The TypeScript Helmet Settings</div>
+  <pre><span class="cmt">// tsconfig.json — root TypeScript configuration</span>
+{
+  <span class="str">"compilerOptions"</span>: {
+    <span class="str">"target"</span>: <span class="str">"ES2022"</span>,          <span class="cmt">// ← JS version output. ES2015 = wide compat, ES2022 = modern</span>
+    <span class="str">"module"</span>: <span class="str">"ES2022"</span>,          <span class="cmt">// ← module system (ESM = tree-shakeable)</span>
+    <span class="str">"lib"</span>: [<span class="str">"ES2022"</span>, <span class="str">"DOM"</span>],  <span class="cmt">// ← which built-in types to include</span>
+
+    <span class="cmt">// THE HELMET SETTINGS — all should be true for safety</span>
+    <span class="str">"strict"</span>: <span class="kw">true</span>,              <span class="cmt">// ← enables all strict checks below</span>
+    <span class="str">"noImplicitAny"</span>: <span class="kw">true</span>,       <span class="cmt">// ← no untyped variables allowed</span>
+    <span class="str">"strictNullChecks"</span>: <span class="kw">true</span>,    <span class="cmt">// ← null/undefined are separate types</span>
+    <span class="str">"strictPropertyInitialization"</span>: <span class="kw">true</span>, <span class="cmt">// ← class props must be initialized</span>
+    <span class="str">"noUncheckedIndexedAccess"</span>: <span class="kw">true</span>, <span class="cmt">// ← array[n] returns T|undefined</span>
+
+    <span class="cmt">// Angular-specific</span>
+    <span class="str">"experimentalDecorators"</span>: <span class="kw">true</span>,   <span class="cmt">// ← @Component, @Injectable decorators</span>
+    <span class="str">"emitDecoratorMetadata"</span>: <span class="kw">true</span>,    <span class="cmt">// ← DI metadata (how Angular knows types)</span>
+    <span class="str">"moduleResolution"</span>: <span class="str">"bundler"</span>,    <span class="cmt">// ← how imports are resolved</span>
+
+    <span class="cmt">// Path aliases (import from '@/services/auth' instead of '../../services/auth')</span>
+    <span class="str">"baseUrl"</span>: <span class="str">"."</span>,
+    <span class="str">"paths"</span>: { <span class="str">"@/*"</span>: [<span class="str">"src/*"</span>] }
+  }
+}</pre>
+  <p style="font-size:13px;"><strong>Most impactful settings:</strong> <span class="inline-code">"strict": true</span> — if this is <span class="inline-code">false</span>, TypeScript barely checks anything. Many "TypeScript projects" with strict:false provide almost no safety. <span class="inline-code">emitDecoratorMetadata: true</span> — Angular's DI uses this to read constructor parameter types at runtime. Without it, Angular cannot figure out what to inject.</p>
+</div>
+
+<div class="card">
+  <div class="card-label" style="color:var(--accent5);">src/polyfills.ts — The Backward Compatibility File</div>
+  <pre><span class="cmt">// src/polyfills.ts — what goes in Angular's dedicated polyfills bundle</span>
+
+<span class="cmt">// Zone.js — MUST be first. Patches async APIs for change detection.</span>
+<span class="kw">import</span> <span class="str">'zone.js'</span>;
+
+<span class="cmt">// If supporting older browsers, add these:</span>
+<span class="kw">import</span> <span class="str">'core-js/stable'</span>;        <span class="cmt">// ES6+ features for old browsers</span>
+
+<span class="cmt">// Remove these to make bundle smaller (if not supporting IE11):</span>
+<span class="cmt">// import 'classlist.js';</span>
+<span class="cmt">// import 'web-animations-js';</span>
+
+<span class="cmt">// If using Angular Universal (SSR):</span>
+<span class="cmt">// (window as any)['global'] = window; // Node.js global polyfill</span></pre>
+</div>
+
+<h2>React Build Configuration Files</h2>
+
+<div class="card" style="border-color:var(--react);">
+  <div class="card-label" style="color:var(--react);">vite.config.ts — React's Build Orchestrator</div>
+  <pre><span class="cmt">// vite.config.ts</span>
+<span class="kw">import</span> { defineConfig } <span class="kw">from</span> <span class="str">'vite'</span>
+<span class="kw">import</span> react <span class="kw">from</span> <span class="str">'@vitejs/plugin-react'</span>       <span class="cmt">// ← JSX transform + React Fast Refresh</span>
+<span class="kw">import</span> { visualizer } <span class="kw">from</span> <span class="str">'rollup-plugin-visualizer'</span> <span class="cmt">// ← optional bundle analysis</span>
+
+<span class="kw">export default</span> <span class="fn">defineConfig</span>({
+  plugins: [
+    <span class="fn">react</span>(),      <span class="cmt">// ← transforms JSX → React.createElement. Fast Refresh for HMR.</span>
+  ],
+
+  resolve: {
+    alias: { <span class="str">'@'</span>: <span class="str">'/src'</span> }  <span class="cmt">// ← import '@/components/Button' shortcut</span>
+  },
+
+  build: {
+    outDir: <span class="str">'dist'</span>,
+    sourcemap: <span class="kw">false</span>,          <span class="cmt">// ← true = include source maps in prod</span>
+    rollupOptions: {
+      output: {
+        manualChunks: {          <span class="cmt">// ← control how code is split</span>
+          vendor: [<span class="str">'react'</span>, <span class="str">'react-dom'</span>],    <span class="cmt">// ← separate React chunk (cached)</span>
+          router: [<span class="str">'react-router-dom'</span>]
+        }
+      }
+    }
+  },
+
+  server: {
+    port: <span class="num">3000</span>,
+    proxy: {
+      <span class="str">'/api'</span>: <span class="str">'http://localhost:8080'</span>   <span class="cmt">// ← dev API proxy (no CORS)</span>
+    }
+  }
+})</pre>
+</div>
+
+<div class="card amber">
+  <div class="card-label">tsconfig.json — React Version</div>
+  <pre><span class="cmt">// tsconfig.json (React + Vite)</span>
+{
+  <span class="str">"compilerOptions"</span>: {
+    <span class="str">"target"</span>: <span class="str">"ES2020"</span>,
+    <span class="str">"lib"</span>: [<span class="str">"ES2020"</span>, <span class="str">"DOM"</span>, <span class="str">"DOM.Iterable"</span>],
+    <span class="str">"module"</span>: <span class="str">"ESNext"</span>,
+    <span class="str">"moduleResolution"</span>: <span class="str">"bundler"</span>,
+
+    <span class="cmt">// React-specific: JSX handling</span>
+    <span class="str">"jsx"</span>: <span class="str">"react-jsx"</span>,   <span class="cmt">// ← uses new JSX transform (React 17+)</span>
+                              <span class="cmt">// No need to import React in every file</span>
+    <span class="cmt">// Old: "jsx": "react" → needed: import React from 'react' in every file</span>
+
+    <span class="str">"strict"</span>: <span class="kw">true</span>,
+    <span class="str">"noEmit"</span>: <span class="kw">true</span>,         <span class="cmt">// ← tsc only type-checks, doesn't output files</span>
+                              <span class="cmt">// Vite/esbuild handles actual compilation</span>
+    <span class="str">"skipLibCheck"</span>: <span class="kw">true</span>     <span class="cmt">// ← skip type-checking .d.ts in node_modules</span>
+  },
+  <span class="str">"include"</span>: [<span class="str">"src"</span>]
+}</pre>
+  <p><strong>Key difference from Angular tsconfig:</strong> No <span class="inline-code">experimentalDecorators</span> or <span class="inline-code">emitDecoratorMetadata</span> needed (no decorator-based DI). No Angular-specific lib targets. <span class="inline-code">"jsx": "react-jsx"</span> is the React-critical setting — tells TypeScript how to process JSX syntax.</p>
+</div>
+
+<div class="card green">
+  <div class="card-label">.browserslistrc — Target Browser Matrix</div>
+  <pre><span class="cmt"># .browserslistrc (or "browserslist" field in package.json)</span>
+<span class="cmt"># This file is READ by: Babel, PostCSS/Autoprefixer, cssnano</span>
+<span class="cmt"># Determines: which polyfills to add, which CSS prefixes to add</span>
+
+<span class="cmt"># Modern app (no IE11):</span>
+> 0.5%            <span class="cmt"># browsers used by &gt;0.5% of users globally</span>
+last 2 versions   <span class="cmt"># latest 2 versions of each browser</span>
+Firefox ESR       <span class="cmt"># Firefox Extended Support Release</span>
+not dead          <span class="cmt"># exclude browsers with no official support</span>
+
+<span class="cmt"># Aggressive modern (Chrome 90+, Safari 14+):</span>
+Chrome >= 90
+Safari >= 14
+Firefox >= 88
+
+<span class="cmt"># IE11 support (enterprise, government):</span>
+> 0.5%
+last 2 versions
+IE 11             <span class="cmt"># this adds MANY polyfills and forces ES5 output</span>
+
+<span class="cmt"># Angular also uses this for differential loading:</span>
+<span class="cmt"># legacy build (ES5, polyfills) + modern build (ES2020, no polyfills)</span>
+<span class="cmt"># Browser gets correct version via &lt;script type="module"&gt; detection</span></pre>
+</div>
+
+<div class="card">
+  <div class="card-label" style="color:var(--accent5);">package.json — The Project DNA</div>
+  <pre><span class="cmt">// package.json — not just dependencies. Many build tools read this.</span>
+{
+  <span class="str">"name"</span>: <span class="str">"my-app"</span>,
+  <span class="str">"version"</span>: <span class="str">"1.0.0"</span>,
+
+  <span class="str">"scripts"</span>: {
+    <span class="cmt">// Angular:</span>
+    <span class="str">"start"</span>: <span class="str">"ng serve"</span>,
+    <span class="str">"build"</span>: <span class="str">"ng build"</span>,
+    <span class="str">"build:prod"</span>: <span class="str">"ng build --configuration=production"</span>,
+    <span class="str">"test"</span>: <span class="str">"ng test"</span>,
+    <span class="str">"lint"</span>: <span class="str">"ng lint"</span>,
+
+    <span class="cmt">// React (Vite):</span>
+    <span class="str">"dev"</span>: <span class="str">"vite"</span>,
+    <span class="str">"build"</span>: <span class="str">"tsc --noEmit && vite build"</span>, <span class="cmt">// ← type-check THEN build</span>
+    <span class="str">"preview"</span>: <span class="str">"vite preview"</span>              <span class="cmt">// ← preview production build locally</span>
+  },
+
+  <span class="cmt">// Tree-shaking marker — tells bundlers if your code has side effects</span>
+  <span class="str">"sideEffects"</span>: [<span class="str">"*.css"</span>, <span class="str">"src/polyfills.js"</span>],
+  <span class="cmt">// "sideEffects": false ← entire library is tree-shakeable</span>
+
+  <span class="cmt">// Browserslist embedded (alternative to .browserslistrc file)</span>
+  <span class="str">"browserslist"</span>: [<span class="str">"&gt;0.5%"</span>, <span class="str">"last 2 versions"</span>, <span class="str">"not dead"</span>],
+
+  <span class="cmt">// ES module declaration — tells Node.js + bundlers this is ESM</span>
+  <span class="str">"type"</span>: <span class="str">"module"</span>,
+
+  <span class="cmt">// For library authors: where is your entry point?</span>
+  <span class="str">"main"</span>: <span class="str">"dist/index.cjs"</span>,    <span class="cmt">// ← CommonJS entry</span>
+  <span class="str">"module"</span>: <span class="str">"dist/index.mjs"</span>,  <span class="cmt">// ← ES module entry (tree-shakeable)</span>
+  <span class="str">"exports"</span>: { ... }             <span class="cmt">// ← modern entry point map</span>
+}</pre>
+</div>
+
+<h2>The "Helmet Chain" — Which File Does What in the Build</h2>
+
+<div class="card accent">
+  <div class="card-label">🪖 Complete Type Safety & Build Chain</div>
+  <pre><span class="cmt">Your TypeScript source file</span>
+        ↓
+<span class="cmt">tsconfig.json</span>
+        ↓  <span class="cmt">Determines: strict checks, target ES version, jsx mode, decorator support</span>
+        ↓  <span class="cmt">Angular: emitDecoratorMetadata=true → DI can read types</span>
+        ↓  <span class="cmt">React: jsx=react-jsx → JSX auto-transforms without importing React</span>
+        ↓
+<span class="cmt">tsc (type checking pass only, --noEmit)</span>
+        ↓  <span class="cmt">Catches: null errors, type mismatches, missing properties</span>
+        ↓  <span class="cmt">Does NOT: produce files, bundle, minify</span>
+        ↓
+<span class="cmt">Babel / esbuild (transpilation)</span>
+        ↓  <span class="cmt">Reads: .browserslistrc + babel.config.js / vite.config.ts</span>
+        ↓  <span class="cmt">Does: ES2022 → ES5/2020, strips types (no checking!), transforms JSX</span>
+        ↓
+<span class="cmt">Webpack / Vite / Rollup (bundling)</span>
+        ↓  <span class="cmt">Reads: webpack.config.js OR vite.config.ts</span>
+        ↓  <span class="cmt">Does: resolve imports, tree shake, code split, emit chunks</span>
+        ↓
+<span class="cmt">Terser / cssnano (minification)</span>
+        ↓  <span class="cmt">Does: whitespace removal, name mangling, constant folding</span>
+        ↓
+<span class="cmt">dist/ or build/ — Production artifacts</span>
+        ↓
+<span class="cmt">.browserslistrc → drives Babel polyfills + Autoprefixer CSS prefixes</span></pre>
+</div>
+
+<div class="grid-2">
+  <div class="card red">
+    <div class="card-label">Angular: Key Files for Build Behavior</div>
+    <ul style="font-size:13px;">
+      <li><span class="file-badge">angular.json</span> — what gets bundled, optimization flags, budget limits, environment replacements</li>
+      <li><span class="file-badge">tsconfig.app.json</span> — which TS files are compiled for the app (excludes test files)</li>
+      <li><span class="file-badge">tsconfig.spec.json</span> — TS config for test files (includes spec files)</li>
+      <li><span class="file-badge">src/polyfills.ts</span> — always imported first. Zone.js must be here.</li>
+      <li><span class="file-badge">src/environments/environment.prod.ts</span> — swapped in by Angular CLI for production builds</li>
+      <li><span class="file-badge">.browserslistrc</span> — controls polyfill injection and differential loading</li>
+    </ul>
+  </div>
+  <div class="card" style="border-color:var(--react);">
+    <div class="card-label" style="color:var(--react);">React: Key Files for Build Behavior</div>
+    <ul style="font-size:13px;">
+      <li><span class="file-badge">vite.config.ts</span> — plugins (JSX transform), chunk splitting, dev server proxy, aliases</li>
+      <li><span class="file-badge">tsconfig.json</span> — jsx mode is critical ("react-jsx" vs "react")</li>
+      <li><span class="file-badge">.env / .env.production</span> — environment variables. MUST start with <span class="inline-code">VITE_</span> to be included in bundle</li>
+      <li><span class="file-badge">package.json</span> — sideEffects field controls tree shaking. Type field controls ESM mode.</li>
+      <li><span class="file-badge">.browserslistrc</span> — drives @vitejs/plugin-legacy for polyfill generation</li>
+      <li><span class="file-badge">index.html</span> — Vite's entry point (not src/index.js like CRA)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="reverse-box">
+  <div class="rev-label">🔄 What Goes Wrong With Each File</div>
+  <ul style="font-size:13.5px;">
+    <li><strong>tsconfig.json</strong> with <span class="inline-code">strict:false</span> → TypeScript is essentially JavaScript with types as comments. No safety.</li>
+    <li><strong>tsconfig.json</strong> missing <span class="inline-code">emitDecoratorMetadata</span> in Angular → DI fails at runtime: "Cannot read property of undefined" on service injection.</li>
+    <li><strong>tsconfig.json</strong> wrong <span class="inline-code">jsx</span> mode in React → "React is not defined" error in browser even with React installed.</li>
+    <li><strong>angular.json</strong> budgets set too high → 5MB production bundle ships without a single warning.</li>
+    <li><strong>polyfills.ts</strong> missing Zone.js → Angular change detection completely broken. UI never updates.</li>
+    <li><strong>.browserslistrc</strong> missing IE11 with enterprise users → app crashes silently in IE11 with no obvious error.</li>
+    <li><strong>vite.config.ts</strong> missing proxy config → every API call fails with CORS error in development.</li>
+    <li><strong>.env</strong> variables without <span class="inline-code">VITE_</span> prefix → environment variable is undefined at runtime (Vite security feature).</li>
+  </ul>
+</div>
+
+<div class="story-box">
+  <div class="story-label">📖 The Config That Broke Production</div>
+  <p>A team ships a React app. Works in development. On production — blank white screen. Three hours of debugging. The culprit? <span class="inline-code">vite.config.ts</span> had <span class="inline-code">base: '/app/'</span> for the company's subdirectory deployment. But <span class="inline-code">index.html</span> referenced <span class="inline-code">/assets/main.js</span> (absolute path). In production under <span class="inline-code">/app/</span>, the browser looked for <span class="inline-code">/assets/main.js</span> at the root — 404. The fix: one line in vite.config. Three hours of detective work. The config file is the crime scene.</p>
+</div>
+
+<div class="recall-box">
+  <div class="recall-label">⚡ Final Recall Trigger — The Config Map</div>
+  <strong>Angular:</strong> angular.json (conductor) → tsconfig.app.json (helmet) → polyfills.ts (time machine for old browsers) → .browserslistrc (which old browsers) → environments/ (dev vs prod URLs). <br><br>
+  <strong>React:</strong> vite.config.ts (conductor + JSX transform) → tsconfig.json (helmet + jsx mode) → .env files (runtime vars) → .browserslistrc (browser targets) → package.json:sideEffects (tree shaking gatekeeper).
+</div>
+
+<div class="recap-box">
+  <div class="recap-label">⏱ Final 30-Second Revision — Everything</div>
+  <strong>Browser:</strong> DOM+CSSOM→Render Tree→Layout→Paint→Composite. defer/type=module fixes script blocking. React/Angular auto-inject deferred scripts. Hidden blockers: GTM, web fonts, hydration. Layout thrashing: React batches writes (commit phase). ResizeObserver/rAF for safe geometry reads.<br><br>
+  <strong>ESNext Story:</strong> 10 days → IE11 nightmare → Babel age 17 → TC39 Stage 0-4 → annual releases → ESNext = perpetual horizon.<br><br>
+  <strong>TS→JS:</strong> tsc=helmet. esbuild=Go binary (100x faster, no type check). TBMTCS build pipeline.<br><br>
+  <strong>Bundling:</strong> Browserify→Webpack→Rollup→Vite. CJS=no tree shake. ESM=tree shakeable. Bundle analyzer=real-time code tree. Minification≠mangling.<br><br>
+  <strong>DI:</strong> R3Injector manages pool. providedIn:root=singleton. Hierarchical tree. NullInjectorError=not registered.<br><br>
+  <strong>Angular:</strong> Ivy compiles templates. AOT≠tsc. Zone.js patches async→CD. RxJS for streams. Dev=large unminified. Prod=hashed chunks.<br><br>
+  <strong>React:</strong> JSX→createElement→VDOM→diff→real DOM. VDOM≠ShadowDOM. React won: simplicity+stability. No DI=less code.<br><br>
+  <strong>RxJS:</strong> Observable=radio station. switchMap=cancel+restart. pipe=factory line.<br><br>
+  <strong>Configs:</strong> tsconfig.json=helmet settings. angular.json=Angular conductor. vite.config.ts=React conductor. .browserslistrc=browser targets. polyfills.ts=time machine.<br><br>
+  <strong>package.json:</strong> ^=minor safe. ~=patch only. dependencies=runtime. devDependencies=build-time. scripts=task runner. NODE_ENV controls everything.<br><br>
+  <strong>node_modules:</strong> npm registry → package-lock.json = deterministic installs. Phantom deps via hoisting. pnpm solves with symlinks.
+</div>
+</section>
+
+<!-- ===== SECTION 11: PACKAGE.JSON DEEP DIVE ===== -->
+<section id="pkgjson">
+<div class="section-tag">Section 11 · Package Ecosystem</div>
+<h1><span class="section-number" style="background:rgba(80,200,160,0.2);color:var(--accent2);">11</span>package.json — Dev vs Prod & The Version Symbols</h1>
+
+<p class="subtitle">package.json is the brain of your project. Every symbol, every field, every script has a precise meaning — and the wrong one can silently break production months later.</p>
+
+<div class="card accent">
+  <div class="card-label">📸 Snapshot — The ^ and ~ Mystery</div>
+  <p>You run <span class="inline-code">npm install lodash</span> and your package.json gets <span class="inline-code">"lodash": "^4.17.21"</span>. What does that <span class="inline-code">^</span> mean? What's the difference from <span class="inline-code">~</span>? And why does a tiny symbol control whether your production deploy works or breaks three months from now?</p>
+  <blockquote>The ^ symbol is a polite promise: "I'll take any update that doesn't break my interface." The ~ symbol is a paranoid promise: "I'll only take bug fixes, nothing else changes." And no symbol at all is a desperate promise: "Give me this exact version and nothing else, ever."</blockquote>
+</div>
+
+<h2>Semantic Versioning (SemVer) — The Foundation</h2>
+
+<div class="card">
+  <div class="card-label" style="color:var(--accent3);">📐 How Version Numbers Work — MAJOR.MINOR.PATCH</div>
+  <pre><span class="cmt">                  4   .   17   .   21</span>
+<span class="cmt">                  ↑        ↑        ↑</span>
+<span class="cmt">               MAJOR    MINOR    PATCH</span>
+<span class="cmt">                  │        │        │</span>
+<span class="cmt">          Breaking    New        Bug</span>
+<span class="cmt">            change  features    fixes</span>
+<span class="cmt">                  │        │        │</span>
+<span class="cmt">         API changed  Backward   No API</span>
+<span class="cmt">         old code     compat     change</span>
+<span class="cmt">         may break    guaranteed  at all</span>
+
+<span class="cmt">// Examples:</span>
+<span class="cmt">// 4.17.21 → 4.17.22  = PATCH (bug fix, safe to take)</span>
+<span class="cmt">// 4.17.21 → 4.18.0   = MINOR (new features, backward compat, mostly safe)</span>
+<span class="cmt">// 4.17.21 → 5.0.0    = MAJOR (breaking changes, may break your code)</span></pre>
+</div>
+
+<h2>The ^ Caret, ~ Tilde, and Other Range Specifiers</h2>
+
+<div class="card amber">
+  <div class="card-label">🎯 Every Version Specifier Decoded</div>
+  <pre><span class="cmt">// In package.json "dependencies":</span>
+
+<span class="str">"lodash"</span>: <span class="str">"^4.17.21"</span>
+<span class="cmt">// ^ = "compatible with" = MINOR and PATCH updates allowed</span>
+<span class="cmt">// Accepts: 4.17.22, 4.18.0, 4.99.0</span>
+<span class="cmt">// Rejects:  5.0.0 (MAJOR = breaking)</span>
+<span class="cmt">// This is npm's DEFAULT when you run: npm install lodash</span>
+<span class="cmt">// RISK: 4.18.0 might introduce a bug that breaks your app</span>
+
+<span class="str">"lodash"</span>: <span class="str">"~4.17.21"</span>
+<span class="cmt">// ~ = "approximately equal" = only PATCH updates</span>
+<span class="cmt">// Accepts: 4.17.22, 4.17.99</span>
+<span class="cmt">// Rejects:  4.18.0 (MINOR change)</span>
+<span class="cmt">// Safer than ^, but misses legitimate new features</span>
+
+<span class="str">"lodash"</span>: <span class="str">"4.17.21"</span>
+<span class="cmt">// No symbol = EXACT version. Never updates. Ever.</span>
+<span class="cmt">// Accepts: 4.17.21 only</span>
+<span class="cmt">// Pro: 100% reproducible builds</span>
+<span class="cmt">// Con: security patches need manual updates</span>
+
+<span class="str">"lodash"</span>: <span class="str">"*"</span>
+<span class="cmt">// * = latest. Takes ANYTHING including MAJOR breaking versions</span>
+<span class="cmt">// DANGEROUS in production. Never use in dependencies.</span>
+
+<span class="str">"lodash"</span>: <span class="str">">=4.0.0 <5.0.0"</span>
+<span class="cmt">// Range notation. Explicit floor and ceiling.</span>
+<span class="cmt">// Used internally by npm to resolve peer deps.</span>
+
+<span class="str">"lodash"</span>: <span class="str">"4.17.x"</span>
+<span class="cmt">// x wildcard = same as ~ (any patch in 4.17.*)</span></pre>
+</div>
+
+<div class="story-box">
+  <div class="story-label">💥 The ^ That Broke Black Friday</div>
+  <p>A mid-size e-commerce company's React app works perfectly in development. They use <span class="inline-code">"date-fns": "^2.28.0"</span> for date formatting. Three months pass. Someone new joins the team, runs <span class="inline-code">npm install</span> on their machine. npm resolves <span class="inline-code">^2.28.0</span> → installs <span class="inline-code">2.30.0</span> (latest compatible). Their machine has 2.30.0. Everyone else has 2.28.0. They push to CI. CI does a fresh <span class="inline-code">npm install</span> → also gets 2.30.0.</p>
+  <p>A change in <span class="inline-code">date-fns 2.29.0</span> changed how it handles timezone parsing. The checkout date picker now shows the wrong day in certain timezones. They don't notice in testing — their team is all in UTC+0. On Black Friday, customers in UTC+5:30 (India) see tomorrow's date on their orders. Orders are misrouted. Chaos. The fix: <span class="inline-code">npm ci</span> (which uses <span class="inline-code">package-lock.json</span> and refuses to deviate) instead of <span class="inline-code">npm install</span> in CI pipelines.</p>
+</div>
+
+<div class="card green">
+  <div class="card-label">✅ The package-lock.json Solution — Deterministic Installs</div>
+  <pre><span class="cmt">// package.json says:    "lodash": "^4.17.21"</span>
+<span class="cmt">// (This is an INTENTION — "I want lodash compatible with 4.17.21")</span>
+
+<span class="cmt">// package-lock.json says: (this is the CONTRACT)</span>
+{
+  <span class="str">"lodash"</span>: {
+    <span class="str">"version"</span>: <span class="str">"4.17.21"</span>,  <span class="cmt">// EXACT version locked</span>
+    <span class="str">"resolved"</span>: <span class="str">"https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz"</span>,
+    <span class="str">"integrity"</span>: <span class="str">"sha512-v2kDEe57..."</span>  <span class="cmt">// SHA hash = verify no tampering</span>
+  }
+}
+
+<span class="cmt">// npm install  = reads package.json, may upgrade within ^/~ range</span>
+<span class="cmt">// npm ci       = reads package-lock.json EXACTLY. No deviations.</span>
+<span class="cmt">// RULE: Always use npm ci in CI/CD pipelines. npm install on dev machines.</span></pre>
+</div>
+
+<h2>dependencies vs devDependencies vs peerDependencies</h2>
+
+<div class="grid-3">
+  <div class="card red">
+    <div class="card-label">dependencies — Ships to Browser</div>
+    <pre style="font-size:11px;"><span class="cmt">// Goes into production bundle</span>
+<span class="cmt">// User's browser downloads these</span>
+<span class="str">"dependencies"</span>: {
+  <span class="str">"react"</span>: <span class="str">"^18.2.0"</span>,
+  <span class="str">"react-dom"</span>: <span class="str">"^18.2.0"</span>,
+  <span class="str">"@angular/core"</span>: <span class="str">"^17.0.0"</span>,
+  <span class="str">"lodash-es"</span>: <span class="str">"^4.17.21"</span>,
+  <span class="str">"date-fns"</span>: <span class="str">"^3.0.0"</span>
+}
+<span class="cmt">// npm install installs these</span>
+<span class="cmt">// for both dev AND production</span></pre>
+    <p style="font-size:12px;margin-top:8px;"><strong>Rule:</strong> If your code imports it in a file that ships to the browser → it goes here.</p>
+  </div>
+  <div class="card amber">
+    <div class="card-label">devDependencies — Build Time Only</div>
+    <pre style="font-size:11px;"><span class="cmt">// NOT in production bundle</span>
+<span class="cmt">// Only installed for building/testing</span>
+<span class="str">"devDependencies"</span>: {
+  <span class="str">"typescript"</span>: <span class="str">"^5.0.0"</span>,
+  <span class="str">"@types/react"</span>: <span class="str">"^18.0.0"</span>,
+  <span class="str">"vite"</span>: <span class="str">"^5.0.0"</span>,
+  <span class="str">"vitest"</span>: <span class="str">"^1.0.0"</span>,
+  <span class="str">"eslint"</span>: <span class="str">"^8.0.0"</span>,
+  <span class="str">"@testing-library/react"</span>: <span class="str">"^14.0.0"</span>
+}
+<span class="cmt">// npm install --production</span>
+<span class="cmt">// skips devDependencies entirely</span></pre>
+    <p style="font-size:12px;margin-top:8px;"><strong>Rule:</strong> Compilers, bundlers, test frameworks, type definitions, linters → always devDependencies.</p>
+  </div>
+  <div class="card purple">
+    <div class="card-label">peerDependencies — Host Contract</div>
+    <pre style="font-size:11px;"><span class="cmt">// "I need React to exist but I</span>
+<span class="cmt">// won't install it myself"</span>
+<span class="str">"peerDependencies"</span>: {
+  <span class="str">"react"</span>: <span class="str">">=16.8.0"</span>
+}
+<span class="cmt">// Used by: library authors</span>
+<span class="cmt">// react-router, react-query, etc.</span>
+<span class="cmt">// They say: "I work with react</span>
+<span class="cmt">// >= 16.8 but YOU install it"</span>
+<span class="cmt">// Prevents duplicate react in bundle</span>
+<span class="cmt">// npm v7+ auto-installs peers</span></pre>
+    <p style="font-size:12px;margin-top:8px;"><strong>Rule:</strong> Only for library authors. Declares compatibility range without owning the dependency.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label" style="color:var(--accent5);">optionalDependencies & bundledDependencies</div>
+  <pre><span class="cmt">// optionalDependencies — installs if possible, skips if it fails</span>
+<span class="str">"optionalDependencies"</span>: {
+  <span class="str">"fsevents"</span>: <span class="str">"^2.3.0"</span>  <span class="cmt">// macOS-only file watcher. Skipped on Linux/Windows.</span>
+}
+
+<span class="cmt">// bundledDependencies — packages that ship INSIDE your npm tarball</span>
+<span class="cmt">// (rare, for offline or legacy package scenarios)</span>
+<span class="str">"bundledDependencies"</span>: [<span class="str">"some-private-lib"</span>]</pre>
+</div>
+
+<h2>scripts — Dev vs Production Commands Decoded</h2>
+
+<div class="card green">
+  <div class="card-label">⚙️ Complete scripts Section — Every Command Explained</div>
+  <pre><span class="str">"scripts"</span>: {
+
+  <span class="cmt">// ═══════════════════════════════════════════════════</span>
+  <span class="cmt">// DEVELOPMENT SCRIPTS</span>
+  <span class="cmt">// ═══════════════════════════════════════════════════</span>
+
+  <span class="str">"dev"</span>: <span class="str">"vite"</span>,
+  <span class="cmt">// → Starts Vite dev server. Hot Module Replacement enabled.</span>
+  <span class="cmt">// → Uses esbuild (fast). No optimization. Source maps inline.</span>
+  <span class="cmt">// → NODE_ENV is automatically set to "development"</span>
+
+  <span class="str">"start"</span>: <span class="str">"ng serve"</span>,
+  <span class="cmt">// → Angular's dev server. Same concept as vite dev.</span>
+  <span class="cmt">// → Watches files, recompiles on change, serves at localhost:4200</span>
+
+  <span class="str">"start:staging"</span>: <span class="str">"ng serve --configuration=staging"</span>,
+  <span class="cmt">// → Serves with staging environment variables</span>
+  <span class="cmt">// → Useful for testing against staging API on local machine</span>
+
+  <span class="cmt">// ═══════════════════════════════════════════════════</span>
+  <span class="cmt">// BUILD SCRIPTS</span>
+  <span class="cmt">// ═══════════════════════════════════════════════════</span>
+
+  <span class="str">"build"</span>: <span class="str">"tsc --noEmit && vite build"</span>,
+  <span class="cmt">// → Type-check FIRST (tsc --noEmit = check only, no files)</span>
+  <span class="cmt">// → Then Vite builds production bundle</span>
+  <span class="cmt">// → NODE_ENV="production" is set by Vite automatically</span>
+  <span class="cmt">// → Minification, tree-shaking, chunk hashing all happen here</span>
+
+  <span class="str">"build:analyze"</span>: <span class="str">"vite build --mode analyze"</span>,
+  <span class="cmt">// → Production build + opens bundle analyzer in browser</span>
+  <span class="cmt">// → Use to find bloated dependencies before shipping</span>
+
+  <span class="str">"build:prod"</span>: <span class="str">"ng build --configuration=production"</span>,
+  <span class="cmt">// → Angular production build</span>
+  <span class="cmt">// → AOT compilation, minification, tree-shaking, hashed filenames</span>
+  <span class="cmt">// → Outputs to dist/ folder</span>
+
+  <span class="str">"preview"</span>: <span class="str">"vite preview"</span>,
+  <span class="cmt">// → Serves the PRODUCTION build locally for inspection</span>
+  <span class="cmt">// → Critical: test production build before deploying!</span>
+  <span class="cmt">// → Many bugs only appear in production mode (minification, path issues)</span>
+
+  <span class="cmt">// ═══════════════════════════════════════════════════</span>
+  <span class="cmt">// TEST SCRIPTS</span>
+  <span class="cmt">// ═══════════════════════════════════════════════════</span>
+
+  <span class="str">"test"</span>: <span class="str">"vitest"</span>,
+  <span class="cmt">// → Runs tests in watch mode (re-runs on file change)</span>
+  <span class="cmt">// → NODE_ENV="test" (many libs check this for test-safe behavior)</span>
+
+  <span class="str">"test:ci"</span>: <span class="str">"vitest run --reporter=verbose --coverage"</span>,
+  <span class="cmt">// → Runs tests once (no watch), generates coverage report</span>
+  <span class="cmt">// → --reporter=verbose for CI logs</span>
+  <span class="cmt">// → Run this in CI/CD pipelines, not interactive terminal</span>
+
+  <span class="str">"test:e2e"</span>: <span class="str">"playwright test"</span>,
+  <span class="cmt">// → End-to-end tests. Opens real browser, simulates user.</span>
+
+  <span class="cmt">// ═══════════════════════════════════════════════════</span>
+  <span class="cmt">// CODE QUALITY</span>
+  <span class="cmt">// ═══════════════════════════════════════════════════</span>
+
+  <span class="str">"lint"</span>: <span class="str">"eslint src --ext .ts,.tsx"</span>,
+  <span class="str">"lint:fix"</span>: <span class="str">"eslint src --ext .ts,.tsx --fix"</span>,
+  <span class="str">"format"</span>: <span class="str">"prettier --write src/**/*.{ts,tsx,css}"</span>,
+  <span class="str">"typecheck"</span>: <span class="str">"tsc --noEmit"</span>,  <span class="cmt">// type-check without building</span>
+
+  <span class="cmt">// ═══════════════════════════════════════════════════</span>
+  <span class="cmt">// LIFECYCLE HOOKS (npm runs these automatically)</span>
+  <span class="cmt">// ═══════════════════════════════════════════════════</span>
+
+  <span class="str">"prepare"</span>: <span class="str">"husky install"</span>,
+  <span class="cmt">// → Runs automatically after npm install</span>
+  <span class="cmt">// → Used to set up git hooks (pre-commit lint/test)</span>
+
+  <span class="str">"prebuild"</span>: <span class="str">"npm run lint && npm run typecheck"</span>,
+  <span class="cmt">// → Runs BEFORE "build". Any script can have pre/post hooks.</span>
+  <span class="cmt">// → prebuild runs before build, postbuild runs after build</span>
+
+  <span class="str">"postinstall"</span>: <span class="str">"patch-package"</span>
+  <span class="cmt">// → Runs after npm install. Used to apply patches to node_modules.</span>
+}</pre>
+</div>
+
+<h2>NODE_ENV — The Master Switch</h2>
+
+<div class="card red">
+  <div class="card-label">🔴 NODE_ENV Controls Everything — More Than You Think</div>
+  <p><span class="inline-code">NODE_ENV</span> is an environment variable that many libraries check to switch between development and production behavior. It's not a React or Angular concept — it's a Node.js convention that the entire ecosystem follows:</p>
+  <pre><span class="cmt">// What changes based on NODE_ENV:</span>
+
+<span class="cmt">// React (react/cjs/react.development.js vs react.production.min.js):</span>
+<span class="kw">if</span> (process.env.NODE_ENV !== <span class="str">'production'</span>) {
+  <span class="cmt">// propTypes validation (runtime type checking)</span>
+  <span class="cmt">// Detailed error messages with stack traces</span>
+  <span class="cmt">// Development-only warnings</span>
+  <span class="cmt">// StrictMode double-renders components to find bugs</span>
+}
+<span class="cmt">// In production: all above REMOVED. React is 40% smaller.</span>
+
+<span class="cmt">// Angular: uses environment files instead of NODE_ENV directly</span>
+<span class="cmt">// but angular.json build optimizer also reads NODE_ENV</span>
+
+<span class="cmt">// Your own code:</span>
+<span class="kw">const</span> API_URL = process.env.NODE_ENV === <span class="str">'production'</span>
+  ? <span class="str">'https://api.myapp.com'</span>
+  : <span class="str">'http://localhost:8080'</span>;
+
+<span class="cmt">// Webpack/Vite replace process.env.NODE_ENV at BUILD time</span>
+<span class="cmt">// with a string literal — then dead code elimination removes</span>
+<span class="cmt">// the branch that won't execute:</span>
+<span class="cmt">// if ('production' !== 'production') { ... } → GONE</span></pre>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--accent4);">NODE_ENV Values</h3>
+      <ul style="font-size:13px;">
+        <li><span class="inline-code">development</span> — dev server, source maps, verbose errors</li>
+        <li><span class="inline-code">production</span> — minified, optimized, silent errors</li>
+        <li><span class="inline-code">test</span> — set by Jest/Vitest automatically. Disables animations, uses in-memory DBs.</li>
+        <li><strong>Note:</strong> There is no staging/QA value. Those are custom env vars, not NODE_ENV.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:14px;color:var(--accent2);">How Vite and CRA Set It</h3>
+      <ul style="font-size:13px;">
+        <li><span class="inline-code">vite dev</span> → NODE_ENV=development</li>
+        <li><span class="inline-code">vite build</span> → NODE_ENV=production</li>
+        <li>CRA: same pattern via react-scripts</li>
+        <li>Angular: doesn't use NODE_ENV directly — uses <span class="inline-code">--configuration</span> flag</li>
+        <li>Cross-platform: use <span class="inline-code">cross-env</span> npm package to set env vars on Windows</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h2>Environment Variables — .env Files Decoded</h2>
+
+<div class="card amber">
+  <div class="card-label">🌍 How Environment Variables Flow From .env to Bundle</div>
+  <pre><span class="cmt">// .env files (Vite project):</span>
+.env                  <span class="cmt">← always loaded (all environments)</span>
+.env.local            <span class="cmt">← always loaded, GITIGNORED (secrets on local machine)</span>
+.env.development      <span class="cmt">← loaded in dev mode only</span>
+.env.production       <span class="cmt">← loaded in production build only</span>
+.env.staging          <span class="cmt">← loaded with: vite build --mode staging</span>
+
+<span class="cmt">// Inside the file:</span>
+VITE_API_URL=https://api.prod.com     <span class="cmt">← VITE_ prefix = bundled into client code</span>
+VITE_FEATURE_FLAG_DARK_MODE=true
+DB_PASSWORD=secret123                 <span class="cmt">← NO prefix = stays on server, NOT bundled</span>
+
+<span class="cmt">// In your React code:</span>
+<span class="kw">const</span> apiUrl = import.meta.env.VITE_API_URL;  <span class="cmt">// ✓ works (bundled)</span>
+<span class="kw">const</span> password = import.meta.env.DB_PASSWORD; <span class="cmt">// ✗ undefined (not bundled)</span>
+
+<span class="cmt">// Angular uses environment.ts files instead:</span>
+<span class="cmt">// src/environments/environment.ts (dev)</span>
+<span class="kw">export const</span> environment = { production: <span class="kw">false</span>, apiUrl: <span class="str">'http://localhost:8080'</span> };
+<span class="cmt">// angular.json replaces this file with environment.prod.ts at build time</span></pre>
+</div>
+
+<h2>Other Important package.json Fields</h2>
+
+<div class="card">
+  <div class="card-label" style="color:var(--accent5);">📋 Fields That Affect Build Behavior</div>
+  <pre><span class="cmt">// package.json — complete reference of build-relevant fields</span>
+{
+  <span class="str">"name"</span>: <span class="str">"my-app"</span>,
+  <span class="str">"version"</span>: <span class="str">"1.0.0"</span>,         <span class="cmt">// Must follow SemVer</span>
+  <span class="str">"private"</span>: <span class="kw">true</span>,              <span class="cmt">// Prevents accidental npm publish</span>
+  <span class="str">"type"</span>: <span class="str">"module"</span>,             <span class="cmt">// Treat .js files as ESM (not CJS)</span>
+
+  <span class="str">"engines"</span>: {
+    <span class="str">"node"</span>: <span class="str">">=18.0.0"</span>,         <span class="cmt">// Minimum Node version required</span>
+    <span class="str">"npm"</span>: <span class="str">">=9.0.0"</span>
+  },
+  <span class="cmt">// npm warns users who have older Node. CI can enforce this.</span>
+
+  <span class="str">"exports"</span>: {                    <span class="cmt">// Modern entry point map (for library authors)</span>
+    <span class="str">"."</span>: {
+      <span class="str">"import"</span>: <span class="str">"./dist/index.mjs"</span>,   <span class="cmt">// ESM entry</span>
+      <span class="str">"require"</span>: <span class="str">"./dist/index.cjs"</span>,  <span class="cmt">// CJS entry</span>
+      <span class="str">"types"</span>: <span class="str">"./dist/index.d.ts"</span>    <span class="cmt">// TypeScript types</span>
+    }
+  },
+
+  <span class="str">"files"</span>: [<span class="str">"dist"</span>, <span class="str">"README.md"</span>],  <span class="cmt">// What gets published to npm registry</span>
+  <span class="cmt">// Everything else is excluded from the npm tarball</span>
+
+  <span class="str">"sideEffects"</span>: [<span class="str">"*.css"</span>],        <span class="cmt">// Tree-shaking: only CSS has side effects</span>
+  <span class="cmt">// false = entire package tree-shakeable</span>
+
+  <span class="str">"browserslist"</span>: [<span class="str">"defaults"</span>],    <span class="cmt">// Browser targets (Babel, Autoprefixer)</span>
+
+  <span class="str">"volta"</span>: {                         <span class="cmt">// Pin Node.js version for the project</span>
+    <span class="str">"node"</span>: <span class="str">"18.19.0"</span>,              <span class="cmt">// All devs get same Node via Volta tool</span>
+    <span class="str">"npm"</span>: <span class="str">"10.2.3"</span>
+  }
+}</pre>
+</div>
+
+<div class="hooks-grid">
+  <div class="hook-card">
+    <div class="emoji">🎯</div>
+    <div class="hook-title">^ vs ~ Memory Hook</div>
+    <p><strong>^</strong> = "Compatible floor" — like an elevator going UP from floor 4.17, stopping anywhere on floors 4.x. Never crosses to building 5.<br><strong>~</strong> = "Same corridor" — stays on floor 4.17, only moves between rooms (patches).</p>
+  </div>
+  <div class="hook-card">
+    <div class="emoji">🔒</div>
+    <div class="hook-title">Lock File Rule</div>
+    <p>package.json = your <em>wishes</em>. package-lock.json = the <em>contract</em>. Always commit lock files. Always use <span class="inline-code">npm ci</span> in CI pipelines. Never commit node_modules.</p>
+  </div>
+  <div class="hook-card">
+    <div class="emoji">🌍</div>
+    <div class="hook-title">NODE_ENV Memory Hook</div>
+    <p>NODE_ENV = the master dimmer switch. Development = full bright (all warnings, full size, verbose). Production = dim to save energy (silent, tiny, optimized).</p>
+  </div>
+</div>
+
+<div class="reverse-box">
+  <div class="rev-label">🔄 What Goes Wrong Without Understanding This</div>
+  <ul style="font-size:13.5px;">
+    <li><strong>Wrong ^</strong> → CI installs different version than dev machine → "works on my machine" bug in production</li>
+    <li><strong>No lock file committed</strong> → every CI run may get different transitive dependency versions</li>
+    <li><strong>webpack in dependencies (not devDependencies)</strong> → webpack ships to production bundle → user downloads build tool they never use</li>
+    <li><strong>NODE_ENV not set to production</strong> → React ships in dev mode (40% larger, propTypes validation on every render = slow)</li>
+    <li><strong>.env secrets without .gitignore</strong> → API keys committed to public GitHub. A bot scrapes GitHub within minutes. Keys are compromised.</li>
+    <li><strong>peerDependencies ignored</strong> → Two copies of React in bundle. Hooks crash with "Invalid hook call" error. Hours of debugging.</li>
+  </ul>
+</div>
+
+<div class="recall-box">
+  <div class="recall-label">⚡ Recall Triggers</div>
+  <strong>SemVer:</strong> MAJOR.MINOR.PATCH = Break.Add.Fix. <strong>^</strong> = same MAJOR, any MINOR. <strong>~</strong> = same MINOR, any PATCH. <strong>No symbol</strong> = exact version. <strong>npm ci</strong> = use lock file exactly (CI pipelines). <strong>devDeps</strong> = never in bundle. <strong>NODE_ENV</strong> = master switch (dev=verbose, prod=silent+tiny).
+</div>
+
+<div class="recap-box">
+  <div class="recap-label">⏱ 30-Second Revision</div>
+  package.json has: name, version, scripts (dev/build/test/lint), dependencies (runtime, goes to browser), devDependencies (build-time only, never in bundle), peerDependencies (library authors, "you install it"). Version specifiers: ^=compatible minor, ~=patch only, exact=frozen. package-lock.json = exact versions contract. npm ci reads lock file strictly. NODE_ENV: development (verbose, large) vs production (silent, tiny) — webpack/vite replace it at build time for dead-code elimination. .env files: VITE_ prefix for client-visible vars.
+</div>
+</section>
+
+<!-- ===== SECTION 12: NODE_MODULES ECOSYSTEM ===== -->
+<section id="nodemodules">
+<div class="section-tag">Section 12 · Package Ecosystem</div>
+<h1><span class="section-number" style="background:rgba(108,138,255,0.2);color:var(--accent);">12</span>node_modules — The Ecosystem Under Your Project</h1>
+
+<div class="card accent">
+  <div class="card-label">📸 Snapshot — The Heaviest Object in the Universe</div>
+  <p>The internet has a running joke: <em>"node_modules is the heaviest object in the known universe."</em> A fresh Angular or React project can have 500–1000 folders inside node_modules — yet your actual app code is 50 files. What is all that? Where does it come from? And what happens when it goes wrong?</p>
+  <blockquote>node_modules is like a hotel's supply room. Your restaurant (app) needs flour, salt, and butter. But to get flour, the supply room also ordered a grain silo. And to get the grain silo installed, it hired a construction company. And the construction company brought 40 workers who each brought their own lunch. That's node_modules.</blockquote>
+</div>
+
+<h2>How npm Works — The Full Registry Flow</h2>
+
+<div class="evo-tree">
+<span class="root">npm install lodash</span>
+ │
+ ├── <span class="solution">1. npm reads package.json</span>
+ │    └── <span class="note">Finds: "lodash": "^4.17.21" in dependencies</span>
+ │
+ ├── <span class="solution">2. Checks package-lock.json (if exists)</span>
+ │    ├── <span class="note">Lock file exists → use exact version from lock (4.17.21)</span>
+ │    └── <span class="note">No lock file → resolve latest compatible version</span>
+ │
+ ├── <span class="solution">3. Checks local cache (~/.npm/)</span>
+ │    ├── <span class="note">Cache hit → use cached tarball (no network!)</span>
+ │    └── <span class="note">Cache miss → fetch from registry.npmjs.org</span>
+ │
+ ├── <span class="solution">4. Downloads from npm registry</span>
+ │    ├── <span class="note">Registry returns: lodash-4.17.21.tgz (compressed tarball)</span>
+ │    ├── <span class="note">npm verifies SHA-512 hash (integrity check)</span>
+ │    └── <span class="note">Extracts to node_modules/lodash/</span>
+ │
+ ├── <span class="solution">5. Resolves lodash's dependencies</span>
+ │    └── <span class="note">lodash has zero dependencies (lucky!). Most packages aren't so clean.</span>
+ │
+ └── <span class="solution">6. Updates package-lock.json</span>
+      └── <span class="note">Records exact version, resolved URL, and integrity hash</span>
+</div>
+
+<h2>Dependency Resolution — Why node_modules Has 1000 Folders</h2>
+
+<div class="card amber">
+  <div class="card-label">🌲 The Dependency Tree Problem</div>
+  <p>You install 10 packages. But each package has its own dependencies. And those dependencies have dependencies. This is the <strong>transitive dependency explosion</strong>:</p>
+  <pre><span class="cmt">You install: react, vite, eslint, prettier, vitest</span>
+<span class="cmt">             ↓ each pulls in their own dependencies</span>
+<span class="cmt">react         → 0 runtime deps (it's lean)</span>
+<span class="cmt">react-dom     → scheduler (1 dep)</span>
+<span class="cmt">vite          → esbuild, rollup, postcss, + 30 more</span>
+<span class="cmt">eslint        → acorn, ajv, glob, ignore, + 20 more</span>
+<span class="cmt">prettier      → + 5 more</span>
+<span class="cmt">vitest        → vite (already installed), chai, + 10 more</span>
+<span class="cmt">             ↓</span>
+<span class="cmt">Result: 5 direct installs → ~800 packages in node_modules</span>
+<span class="cmt">This is NORMAL. Don't panic.</span></pre>
+</div>
+
+<div class="card red">
+  <div class="card-label">🚨 Hoisting & Phantom Dependencies — The Hidden Trap</div>
+  <p>npm/yarn (classic) <strong>flattens</strong> (hoists) the dependency tree into a single <span class="inline-code">node_modules</span> folder. This causes a subtle but dangerous problem:</p>
+  <pre><span class="cmt">// Your package.json:
+// dependencies: { "some-lib": "^1.0.0" }
+// some-lib's dependencies: { "lodash": "^4.0.0" }</span>
+
+<span class="cmt">// After npm install, node_modules looks like:</span>
+node_modules/
+  some-lib/
+  lodash/         <span class="cmt">← hoisted here (was some-lib's dep)</span>
+
+<span class="cmt">// Your code can now do:</span>
+<span class="kw">import</span> _ <span class="kw">from</span> <span class="str">'lodash'</span>; <span class="cmt">// ← WORKS! Even though you never declared it!</span>
+<span class="cmt">// This is a PHANTOM DEPENDENCY — you're using something you didn't install</span>
+
+<span class="cmt">// What happens later:</span>
+<span class="cmt">// some-lib updates to 2.0.0, drops lodash dependency</span>
+<span class="cmt">// npm install → lodash disappears from node_modules</span>
+<span class="cmt">// Your code breaks: "Cannot find module 'lodash'"</span>
+<span class="cmt">// But YOU never changed your package.json!</span></pre>
+</div>
+
+<h2>npm vs yarn vs pnpm — The Package Manager Wars</h2>
+
+<div class="evo-tree">
+<span class="root">Package Manager Evolution</span>
+ │
+ ├── <span class="solution">npm (2009) — The Original</span>
+ │    ├── <span class="note">Ships with Node.js. Universal. No extra install.</span>
+ │    ├── <span class="problem">Problem: Slow (sequential installs). Non-deterministic (pre-v5).</span>
+ │    └── <span class="note">npm v5 (2017): package-lock.json added. npm ci added.</span>
+ │
+ ├── <span class="solution">yarn classic (2016) — Facebook's fix</span>
+ │    ├── <span class="note">Parallel downloads (much faster than npm v3/v4)</span>
+ │    ├── <span class="note">yarn.lock (deterministic installs before npm had lock files)</span>
+ │    └── <span class="problem">Problem: Still hoisting. Phantom deps. Large node_modules.</span>
+ │
+ ├── <span class="solution">yarn berry / yarn v2+ (2020) — Plug'n'Play</span>
+ │    ├── <span class="note">PnP: no node_modules at all! Packages stored in .yarn/cache</span>
+ │    ├── <span class="note">Zero-install: commit .yarn/cache, no npm install needed</span>
+ │    └── <span class="problem">Problem: Some tools (webpack plugins) expect node_modules to exist</span>
+ │
+ ├── <span class="solution">pnpm (2017) — The Content-Addressable Store</span>
+ │    ├── <span class="note">Global content-addressable store in ~/.pnpm-store</span>
+ │    ├── <span class="note">node_modules uses SYMLINKS to global store</span>
+ │    ├── <span class="note">lodash v4.17.21 stored ONCE globally across ALL projects</span>
+ │    ├── <span class="note">Strict mode: no phantom deps (symlinked structure prevents hoisting)</span>
+ │    └── <span class="solution">Result: 10x less disk space. Faster installs. No phantom deps.</span>
+ │
+ └── <span class="solution">Bun (2022) — JavaScript runtime + package manager</span>
+      ├── <span class="note">Written in Zig (compiled). Extremely fast.</span>
+      └── <span class="note">Compatible with npm registry and package.json format</span>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-label" style="color:var(--accent3);">pnpm — How Symlinks Solve Phantom Deps</div>
+    <pre style="font-size:11.5px;"><span class="cmt">// npm/yarn (flat hoisting):</span>
+node_modules/
+  react/      <span class="cmt">← your dep</span>
+  lodash/     <span class="cmt">← phantom! (react's dep, hoisted)</span>
+  some-lib/
+
+<span class="cmt">// pnpm (strict symlinks):</span>
+node_modules/
+  react/        → symlink → ~/.pnpm-store/react@18.2.0
+  some-lib/     → symlink → ~/.pnpm-store/some-lib@1.0.0
+  .pnpm/
+    some-lib@1.0.0/
+      node_modules/
+        lodash/ → symlink → ~/.pnpm-store/lodash@4.17.21
+
+<span class="cmt">// lodash is NOT in your root node_modules</span>
+<span class="cmt">// Import lodash from your code = Module not found</span>
+<span class="cmt">// Phantom deps are impossible with pnpm's structure</span></pre>
+  </div>
+  <div class="card">
+    <div class="card-label" style="color:var(--accent2);">Why pnpm Saves Disk Space</div>
+    <pre style="font-size:11.5px;"><span class="cmt">// Scenario: 5 projects all use React 18.2.0</span>
+
+<span class="cmt">// npm/yarn:</span>
+project-a/node_modules/react → 45KB copy
+project-b/node_modules/react → 45KB copy
+project-c/node_modules/react → 45KB copy
+project-d/node_modules/react → 45KB copy
+project-e/node_modules/react → 45KB copy
+<span class="cmt">Total: 225KB (5 identical copies)</span>
+
+<span class="cmt">// pnpm:</span>
+~/.pnpm-store/react@18.2.0  → 45KB (one copy)
+project-a/node_modules/react → symlink (0 bytes)
+project-b/node_modules/react → symlink (0 bytes)
+... and so on
+<span class="cmt">Total: 45KB (one copy, five symlinks)</span>
+
+<span class="cmt">Scale to 50 packages × 10 projects:</span>
+<span class="cmt">npm: ~2GB. pnpm: ~200MB. 10x saving.</span></pre>
+  </div>
+</div>
+
+<h2>What's Actually Inside node_modules?</h2>
+
+<div class="card">
+  <div class="card-label" style="color:var(--accent5);">🔬 Anatomy of a node_modules Package</div>
+  <pre><span class="cmt">node_modules/react/</span>
+├── package.json            <span class="cmt">← package's own metadata (name, version, exports)</span>
+├── index.js                <span class="cmt">← CJS entry point (require('react'))</span>
+├── jsx-runtime.js          <span class="cmt">← new JSX transform entry (React 17+)</span>
+├── README.md
+├── LICENSE
+├── cjs/
+│   ├── react.development.js  <span class="cmt">← full dev build (propTypes, warnings)</span>
+│   └── react.production.min.js <span class="cmt">← minified prod build</span>
+└── umd/
+    └── react.production.min.js <span class="cmt">← UMD format (for CDN use)</span>
+
+<span class="cmt">// The index.js checks NODE_ENV to pick the right build:</span>
+<span class="kw">if</span> (process.env.NODE_ENV === <span class="str">'production'</span>) {
+  module.exports = <span class="fn">require</span>(<span class="str">'./cjs/react.production.min.js'</span>);
+} <span class="kw">else</span> {
+  module.exports = <span class="fn">require</span>(<span class="str">'./cjs/react.development.js'</span>);
+}
+<span class="cmt">// Webpack replaces process.env.NODE_ENV with the literal 'production'</span>
+<span class="cmt">// Then dead code elimination removes the else branch entirely</span></pre>
+</div>
+
+<h2>Common node_modules Problems & Fixes</h2>
+
+<div class="card red">
+  <div class="card-label">🚨 The node_modules Hall of Horrors</div>
+  <div class="grid-2">
+    <div>
+      <h3 style="margin-top:0;font-size:14px;">Problem: Duplicate packages</h3>
+      <pre style="font-size:11px;"><span class="cmt">// Two versions of a dep:</span>
+node_modules/
+  react@18.0.0/     <span class="cmt">← yours</span>
+  react-query/
+    node_modules/
+      react@17.0.2/ <span class="cmt">← react-query's old dep</span>
+
+<span class="cmt">// Fix: check with:</span>
+<span class="cmt">npm ls react</span>
+<span class="cmt">// Add to package.json:</span>
+<span class="str">"overrides"</span>: { <span class="str">"react"</span>: <span class="str">"^18.0.0"</span> }</pre>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:14px;">Problem: Corrupted install</h3>
+      <pre style="font-size:11px;"><span class="cmt">// Symptoms: random "cannot find module"</span>
+<span class="cmt">// "module has no exports" errors</span>
+<span class="cmt">// Works for colleague, not for you</span>
+
+<span class="cmt">// Nuclear option (always works):</span>
+rm -rf node_modules
+rm package-lock.json
+npm cache clean --force
+npm install
+
+<span class="cmt">// Or with pnpm:</span>
+pnpm store prune
+pnpm install</pre>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-top:12px;">
+    <div>
+      <h3 style="margin-top:0;font-size:14px;">Problem: Peer dependency conflicts</h3>
+      <pre style="font-size:11px;"><span class="cmt">// npm error:</span>
+<span class="cmt">// "react-router@6 requires react >= 18"</span>
+<span class="cmt">// "you have react@17"</span>
+
+<span class="cmt">// Short-term fix (risky):</span>
+npm install --legacy-peer-deps
+
+<span class="cmt">// Real fix: upgrade react to 18+</span>
+<span class="cmt">// Or use compatible react-router version</span></pre>
+    </div>
+    <div>
+      <h3 style="margin-top:0;font-size:14px;">Problem: Security vulnerabilities</h3>
+      <pre style="font-size:11px;"><span class="cmt">// Check: npm audit</span>
+<span class="cmt">// Shows CVEs in your dep tree</span>
+
+<span class="cmt">// Fix safe vulns automatically:</span>
+npm audit fix
+
+<span class="cmt">// Fix breaking vulns (careful!):</span>
+npm audit fix --force
+
+<span class="cmt">// Most vulns are in devDeps</span>
+<span class="cmt">// and don't affect production</span></pre>
+    </div>
+  </div>
+</div>
+
+<h2>The .npmrc File — Configuring npm Behavior</h2>
+
+<div class="card">
+  <div class="card-label" style="color:var(--accent3);">.npmrc — The Often-Forgotten Config</div>
+  <pre><span class="cmt"># .npmrc — project-level npm configuration</span>
+
+<span class="cmt"># Use exact versions when installing (no ^ added automatically)</span>
+save-exact=true
+<span class="cmt"># Now: npm install lodash → "lodash": "4.17.21" (not "^4.17.21")</span>
+
+<span class="cmt"># Private registry for company packages</span>
+@mycompany:registry=https://npm.mycompany.com
+<span class="cmt"># npm install @mycompany/design-system → fetches from company registry</span>
+<span class="cmt"># All other packages still go to registry.npmjs.org</span>
+
+<span class="cmt"># Never install optional dependencies (speeds up CI)</span>
+optional=false
+
+<span class="cmt"># Use pnpm's strict peer dep mode</span>
+strict-peer-dependencies=true
+
+<span class="cmt"># Automatically install peer dependencies</span>
+auto-install-peers=true
+
+<span class="cmt"># Set engine-strict: fail if Node version doesn't match engines field</span>
+engine-strict=true</pre>
+</div>
+
+<div class="hooks-grid">
+  <div class="hook-card">
+    <div class="emoji">🏨</div>
+    <div class="hook-title">Memory Hook 1</div>
+    <p>node_modules = hotel supply room. You order 5 things. Each thing needs a supplier. Each supplier has a delivery truck. 800 trucks arrive for 5 items. Welcome to npm.</p>
+  </div>
+  <div class="hook-card">
+    <div class="emoji">👻</div>
+    <div class="hook-title">Phantom Deps Hook</div>
+    <p>Phantom dependency = eating from your neighbor's plate because the waiter put the food in the middle of the table. Tastes great until your neighbor orders something different and the food disappears.</p>
+  </div>
+  <div class="hook-card">
+    <div class="emoji">🔗</div>
+    <div class="hook-title">pnpm Hook</div>
+    <p>pnpm = global library card system. Every book stored once in the city library. Each project gets a library card (symlink). 10 projects need the same book → 1 copy + 10 cards. npm = 10 physical book copies.</p>
+  </div>
+</div>
+
+<div class="reverse-box">
+  <div class="rev-label">🔄 What Breaks Without Understanding node_modules</div>
+  <ul style="font-size:13.5px;">
+    <li><strong>Phantom deps</strong> → works in dev, breaks in production when transitive dep changes</li>
+    <li><strong>Committing node_modules</strong> → 500MB in git. Merge conflicts in binary files. CI takes 10 minutes to clone.</li>
+    <li><strong>No .gitignore for node_modules</strong> → accidental commit of 800 packages</li>
+    <li><strong>npm install in CI instead of npm ci</strong> → different versions on every CI run, impossible to debug</li>
+    <li><strong>Ignoring npm audit</strong> → ship known security vulnerabilities to production</li>
+    <li><strong>Duplicate React (two copies)</strong> → hooks throw "Invalid hook call" in runtime. Multi-hour debugging session.</li>
+    <li><strong>Mixed package managers (npm + yarn + pnpm)</strong> → multiple lock files, undefined behavior, team confusion</li>
+  </ul>
+</div>
+
+<div class="alert-box">
+  <div class="alert-label">📋 The Golden Rules of node_modules</div>
+  <ul style="font-size:13.5px;">
+    <li>Always <span class="inline-code">.gitignore</span> node_modules — never commit it</li>
+    <li>Always commit your lock file (package-lock.json / yarn.lock / pnpm-lock.yaml)</li>
+    <li>Use <span class="inline-code">npm ci</span> in CI/CD pipelines. Use <span class="inline-code">npm install</span> on dev machines.</li>
+    <li>Pick ONE package manager per project. Document it in README. Enforce via <span class="inline-code">engines.packageManager</span> field or <span class="inline-code">only-allow</span> package.</li>
+    <li>Run <span class="inline-code">npm audit</span> regularly. Fix high/critical vulns before production.</li>
+    <li>Consider pnpm for monorepos or disk-space-constrained CI environments.</li>
+    <li>Use <span class="inline-code">npm ls [package]</span> to diagnose duplicate packages.</li>
+  </ul>
+</div>
+
+<div class="recall-box">
+  <div class="recall-label">⚡ Recall Trigger</div>
+  <strong>npm install</strong> = reads package.json wishes → resolves transitive tree → downloads tarballs → extracts to node_modules → writes lock file. <strong>npm ci</strong> = reads lock file exactly → no resolution, no deviation. <strong>pnpm</strong> = symlinks to global store → no phantom deps → 10x smaller. <strong>NODE_ENV=production</strong> = packages serve their minified build. <strong>npm audit</strong> = check CVEs. <strong>npm ls</strong> = visualize dep tree.
+</div>
+
+<div class="recap-box">
+  <div class="recap-label">⏱ 30-Second Revision</div>
+  node_modules contains your deps + all their transitive deps (800 packages from 5 installs is normal). npm uses flat hoisting → phantom deps possible. pnpm uses symlinks to global store → no phantom deps + 10x disk saving. npm ci reads lock file exactly (use in CI). npm install resolves within ^/~ ranges (use on dev machines). Committing node_modules = crime. Lock file must be committed. npm audit finds security issues. Duplicate packages (two React versions) = hooks crash. .npmrc configures npm behavior per project.
+</div>
+</section>
+</main>
+
+<script>
+  const sections = document.querySelectorAll('section[id], div[id="intro"]');
+  const navLinks = document.querySelectorAll('nav a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => link.classList.remove('active'));
+        const activeLink = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (activeLink) activeLink.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-25% 0px -65% 0px' });
+  sections.forEach(section => observer.observe(section));
+</script>
+</body>
+</html>
